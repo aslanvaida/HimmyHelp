@@ -1,0 +1,1586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HimmyHelp | Academic Workspace</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        /* --- Design Tokens --- */
+        :root {
+            --bg-base:   #0a0a0a;
+            --bg-panel:  #111111;
+            --bg-card:   #171717;
+            --bg-hover:  #1e1e1e;
+            --border:    #262626;
+            --border-hi: #333333;
+            --accent:    #6366f1;
+            --accent-hi: #818cf8;
+            --accent-dk: #4f46e5;
+            --text-1:    #f5f5f5;
+            --text-2:    #a1a1aa;
+            --text-3:    #71717a;
+        }
+
+        /* --- Base & Background --- */
+        body {
+            background-color: var(--bg-base);
+            background-image:
+                radial-gradient(ellipse 80% 55% at 12% 42%, rgba(99,102,241,0.05) 0%, transparent 55%),
+                radial-gradient(ellipse 55% 45% at 88% 12%, rgba(139,92,246,0.04) 0%, transparent 50%);
+            color: var(--text-1);
+            font-family: 'Oswald', ui-sans-serif, system-ui, sans-serif;
+            overflow: hidden;
+        }
+
+        /* Playfair Display for section headings */
+        h1, h2, h3, h4,
+        .markdown-body h1, .markdown-body h2, .markdown-body h3 {
+            font-family: 'Playfair Display', Georgia, serif !important;
+        }
+
+        /* Oswald for interactive UI elements */
+        button, input, textarea, select, .mode-tab, label {
+            font-family: 'Oswald', ui-sans-serif, sans-serif;
+            letter-spacing: 0.02em;
+        }
+
+        /* IBM Plex Sans for right panel content (below the tab nav) */
+        #mode-content, #mode-content *,
+        #chat-input-area, #chat-input-area *,
+        #himmel-active-banner, #himmel-active-banner * {
+            font-family: 'IBM Plex Sans', ui-sans-serif, sans-serif !important;
+            letter-spacing: normal;
+        }
+        /* Keep Playfair for headings inside the panel */
+        #mode-content h1, #mode-content h2, #mode-content h3, #mode-content h4,
+        .markdown-body h1, .markdown-body h2, .markdown-body h3 {
+            font-family: 'Playfair Display', Georgia, serif !important;
+        }
+
+        /* --- Panel Resizers --- */
+        .resizer {
+            width: 4px;
+            background-color: transparent;
+            cursor: col-resize;
+            transition: background-color 0.15s ease;
+            z-index: 10;
+        }
+        .resizer:hover, .resizer.resizing {
+            background-color: var(--accent);
+            box-shadow: 0 0 8px rgba(99,102,241,0.4);
+        }
+
+        /* --- PDF Viewer Canvas & Overlay --- */
+        #pdf-container { position: relative; margin: 0 auto; }
+        canvas {
+            display: block; margin: 0 auto;
+            box-shadow: 0 0 0 1px rgba(255,255,255,0.05), 0 8px 32px rgba(0,0,0,0.7);
+            border-radius: 3px;
+        }
+        #text-layer {
+            position: absolute; left: 0; top: 0; right: 0; bottom: 0;
+            overflow: hidden; line-height: 1.0; pointer-events: auto; color: transparent;
+        }
+        #text-layer span {
+            position: absolute; white-space: pre; cursor: text; transform-origin: 0% 0%;
+        }
+        ::selection { background: rgba(99, 102, 241, 0.3); }
+
+        /* --- Highlight Colors --- */
+        mark.highlight-yellow { background-color: rgba(253, 224, 71, 0.5); color: transparent; }
+        mark.highlight-green  { background-color: rgba(134, 239, 172, 0.5); color: transparent; }
+        mark.highlight-blue   { background-color: rgba(147, 197, 253, 0.5); color: transparent; }
+        mark.highlight-pink   { background-color: rgba(249, 168, 212, 0.5); color: transparent; }
+
+        /* --- Custom Scrollbars --- */
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #2e2e2e; border-radius: 99px; transition: background 0.2s; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+        /* --- Flashcard 3D Animations --- */
+        .perspective-1000 { perspective: 1000px; }
+        .transform-style-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+        .transition-transform { transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); }
+
+        /* --- Markdown Output --- */
+        .markdown-body h1, .markdown-body h2, .markdown-body h3 { font-weight: 600; margin-top: 1em; margin-bottom: 0.5em; color: #ffffff; letter-spacing: -0.015em; }
+        .markdown-body p { margin-bottom: 0.75em; color: #d4d4d8; line-height: 1.7; }
+        .markdown-body ul, .markdown-body ol { padding-left: 1.5em; margin-bottom: 0.75em; color: #d4d4d8; }
+        .markdown-body ul { list-style-type: disc; }
+        .markdown-body ol { list-style-type: decimal; }
+        .markdown-body strong { color: #f5f5f5; }
+        .markdown-body code { background-color: #1e1e1e; padding: 0.18em 0.45em; border-radius: 5px; font-size: 0.88em; color: #c4b5fd; border: 1px solid #2e2e2e; }
+        .markdown-body pre { background-color: #111111; padding: 1em 1.25em; border-radius: 8px; overflow-x: auto; margin-bottom: 1em; border: 1px solid #262626; }
+        .markdown-body pre code { background: transparent; border: none; padding: 0; color: #e2e8f0; font-size: 0.9em; }
+        .markdown-body blockquote { border-left: 3px solid var(--accent); padding-left: 1em; color: #a1a1aa; font-style: italic; margin: 0.75em 0; }
+
+        /* --- AI Typing Indicator --- */
+        .typing-indicator span { display: inline-block; width: 6px; height: 6px; background-color: var(--accent); border-radius: 50%; animation: typingPulse 1.2s ease-in-out infinite; }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typingPulse { 0%, 60%, 100% { opacity: 0.3; transform: scale(0.8); } 30% { opacity: 1; transform: scale(1); } }
+
+        /* --- Premium micro-interactions --- */
+        button { transition: all 0.15s ease; }
+        input, textarea, select { transition: border-color 0.15s ease, box-shadow 0.15s ease; }
+
+        /* --- Panel structure --- */
+        header, #panel-left, #panel-center, #panel-right {
+            background-color: transparent !important;
+            border-color: #262626 !important;
+        }
+        #mode-content, #chat-input-area, .mode-nav {
+            background-color: transparent !important;
+        }
+    </style>
+</head>
+<body class="flex flex-col h-screen w-screen text-sm">
+
+    <header class="flex-none h-14 border-b bg-[#0a0a0a]/85 backdrop-blur-xl border-b border-[#262626] flex items-center justify-between px-6 z-20 shadow-sm">
+        <div class="flex items-center gap-2">
+            <i data-lucide="library" class="w-6 h-6 text-zinc-50"></i>
+            <h1 class="font-bold text-lg text-zinc-50 tracking-tight">HimmyHelp</h1>
+            <span class="px-2 py-0.5 rounded-full bg-[#111111] text-zinc-100 text-xs font-medium ml-2 border border-[#262626]">Study Workspace</span>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <div class="relative flex items-center">
+                <i data-lucide="key" class="w-4 h-4 absolute left-3 text-zinc-400"></i>
+                <input type="password" id="api-key-input" placeholder="Gemini API Key..." class="pl-9 pr-4 py-1.5 border border-[#262626] rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 w-64 bg-[#111111] text-white placeholder-zinc-600 shadow-none focus:shadow-[0_0_0_3px_rgba(99,102,241,0.15)]">
+            </div>
+            <div id="api-status" class="flex items-center gap-1.5 text-xs font-medium text-zinc-300 bg-[#111111] px-3 py-1.5 rounded-lg border border-[#262626]">
+                <div class="w-2 h-2 rounded-full bg-red-500" id="api-indicator"></div>
+                <span id="api-status-text">Disconnected</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 flex overflow-hidden w-full relative">
+
+        <section id="panel-left" class="w-1/5 min-w-[200px] flex flex-col bg-[#111111]/80 border-r border-[#262626] z-10">
+
+            <div class="p-4 border-b border-[#262626] bg-[#111111]">
+                <h2 class="font-semibold text-zinc-50 mb-3 flex items-center gap-2"><i data-lucide="files" class="w-4 h-4"></i> Document Library</h2>
+                <label for="file-input" id="drop-zone" class="border-2 border-dashed border-[#262626] rounded-lg p-6 text-center cursor-pointer hover:bg-[#1e1e1e] hover:border-indigo-500 transition-colors bg-[#111111]/50 block">
+                    <input type="file" id="file-input" multiple accept="application/pdf" class="hidden">
+                    <i data-lucide="upload-cloud" class="w-8 h-8 mx-auto text-zinc-400 mb-2"></i>
+                    <p class="text-xs text-zinc-300 font-medium">Click or Drag PDFs here</p>
+                </label>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-4">
+                <div id="empty-docs" class="text-center text-zinc-400/50 text-xs mt-4">No documents uploaded yet.</div>
+                <ul id="doc-list" class="space-y-2"></ul>
+
+                <div class="mt-8">
+                    <h3 class="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3 px-1 flex items-center gap-1"><i data-lucide="highlighter" class="w-3 h-3"></i> Saved Highlights</h3>
+                    <ul id="highlight-list" class="space-y-2">
+                        <div id="empty-highlights" class="text-center text-zinc-400/50 text-xs italic px-2">Select text in a document to save highlights.</div>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <div class="resizer" id="resizer-1"></div>
+
+        <section id="panel-center" class="flex-1 flex flex-col relative z-0 min-w-[300px]">
+
+            <div class="h-12 border-b border-[#262626] bg-[#111111] flex items-center justify-between px-4 shadow-sm z-10">
+                <div class="flex items-center gap-3">
+                    <span id="current-doc-title" class="font-medium text-white truncate max-w-[200px] text-sm">No Document Selected</span>
+                </div>
+                <div class="flex items-center gap-2 bg-[#111111] rounded-md p-1 border border-[#262626]">
+                    <button id="btn-prev-page" class="p-1 hover:bg-[#1e1e1e] rounded text-zinc-50 disabled:opacity-50"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+                    <span class="text-xs font-medium text-zinc-300 min-w-[60px] text-center">Page <span id="page-num" class="text-zinc-100">0</span> / <span id="page-count">0</span></span>
+                    <button id="btn-next-page" class="p-1 hover:bg-[#1e1e1e] rounded text-zinc-50 disabled:opacity-50"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+                </div>
+                <div class="flex items-center gap-1">
+                    <button id="btn-zoom-out" class="p-1.5 hover:bg-[#1e1e1e] rounded text-zinc-50"><i data-lucide="zoom-out" class="w-4 h-4"></i></button>
+                    <span id="zoom-level" class="text-xs font-medium text-zinc-300 w-12 text-center">100%</span>
+                    <button id="btn-zoom-in" class="p-1.5 hover:bg-[#1e1e1e] rounded text-zinc-50"><i data-lucide="zoom-in" class="w-4 h-4"></i></button>
+                </div>
+            </div>
+
+            <div id="viewer-scroll-area" class="flex-1 overflow-auto relative p-8 flex justify-center items-start">
+                <div id="pdf-empty-state" class="m-auto text-center text-zinc-400/50">
+                    <i data-lucide="book-open" class="w-16 h-16 mx-auto mb-4 opacity-50"></i>
+                    <p class="text-lg font-medium text-zinc-300">Center Viewer</p>
+                    <p class="text-sm">Upload and select a PDF to begin reading.</p>
+                </div>
+
+                <div id="pdf-container" class="hidden relative bg-white shadow-lg transition-transform origin-top">
+                    <canvas id="pdf-canvas"></canvas>
+                    <div id="text-layer"></div>
+                </div>
+            </div>
+
+            <div id="highlight-popup" class="hidden absolute bg-[#0a0a0a] text-white rounded-lg shadow-xl border border-[#262626] flex flex-col overflow-hidden z-50 transform -translate-x-1/2 -translate-y-full mt-[-10px]">
+                <div class="flex items-center gap-1 p-1 border-b border-[#262626]">
+                    <button class="color-btn w-6 h-6 rounded-full bg-indigo-400 hover:scale-110 transition-transform focus:outline-none" data-color="yellow"></button>
+                    <button class="color-btn w-6 h-6 rounded-full bg-green-400 hover:scale-110 transition-transform focus:outline-none" data-color="green"></button>
+                    <button class="color-btn w-6 h-6 rounded-full bg-blue-400 hover:scale-110 transition-transform focus:outline-none" data-color="blue"></button>
+                    <button class="color-btn w-6 h-6 rounded-full bg-pink-400 hover:scale-110 transition-transform focus:outline-none" data-color="pink"></button>
+                </div>
+                <button id="btn-send-highlight" class="flex items-center gap-2 px-3 py-2 text-xs font-medium hover:bg-[#171717] transition-colors w-full text-left text-zinc-100">
+                    <i data-lucide="message-square-plus" class="w-3 h-3"></i> Send to Chat
+                </button>
+            </div>
+        </section>
+
+        <div class="resizer" id="resizer-2"></div>
+
+        <section id="panel-right" class="w-[30%] min-w-[300px] flex flex-col bg-[#0a0a0a]/85 backdrop-blur-xl border-b border-[#262626] border-l border-[#262626] z-10 shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.3)]">
+
+            <nav class="flex px-2 pt-2 bg-[#0a0a0a] border-b border-[#262626] overflow-x-auto gap-1">
+                <button class="mode-tab active px-3 py-2 text-xs font-semibold border-b-2 border-indigo-400 text-zinc-50 transition-colors" data-mode="chat">Chat</button>
+                <button class="mode-tab px-3 py-2 text-xs font-semibold border-b-2 border-transparent text-zinc-400 hover:text-zinc-100 transition-colors" data-mode="flashcards">Flashcards</button>
+                <button class="mode-tab px-3 py-2 text-xs font-semibold border-b-2 border-transparent text-zinc-400 hover:text-zinc-100 transition-colors" data-mode="quiz">Quiz</button>
+                <button class="mode-tab px-3 py-2 text-xs font-semibold border-b-2 border-transparent text-zinc-400 hover:text-zinc-100 transition-colors" data-mode="recall">Active Recall</button>
+                <button class="mode-tab px-3 py-2 text-xs font-semibold border-b-2 border-transparent text-zinc-400 hover:text-zinc-100 transition-colors flex items-center gap-1" data-mode="himmel">
+                    <i data-lucide="shield" class="w-3 h-3 text-indigo-400"></i> Alter Ego
+                </button>
+            </nav>
+
+            <div id="himmel-active-banner" class="hidden bg-[#111111] border-b border-[#262626] px-4 py-2 flex items-center justify-between gap-3">
+                <div class="flex items-center gap-2 min-w-0">
+                    <span id="ae-banner-emoji" class="text-base flex-shrink-0">🦇</span>
+                    <div class="min-w-0">
+                        <p class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest leading-none mb-0.5">Alter Ego Mode</p>
+                        <p class="text-xs font-semibold text-white truncate"><span id="ae-banner-sidekick">Drake</span> <span class="text-zinc-500 font-normal">is guiding you</span></p>
+                    </div>
+                </div>
+                <button id="btn-disable-himmel" class="flex-shrink-0 text-[10px] font-bold text-zinc-400 hover:text-white border border-[#262626] hover:border-zinc-400 rounded px-2 py-1 transition-colors whitespace-nowrap">Exit Mode</button>
+            </div>
+
+            <div id="mode-content" class="flex-1 overflow-y-auto p-4 flex flex-col gap-4 relative">
+
+                <div id="view-chat" class="mode-view flex flex-col gap-4 pb-4">
+                    <div class="text-center mt-10">
+                        <div class="w-12 h-12 bg-[#111111] rounded-full flex items-center justify-center mx-auto mb-3 border border-[#262626]">
+                            <i data-lucide="bot" class="w-6 h-6 text-zinc-300"></i>
+                        </div>
+                        <h3 class="font-bold text-zinc-50">AI Assistant</h3>
+                        <p class="text-zinc-400 text-xs mt-1">Select documents on the left and ask questions. I will cite the active sources.</p>
+                    </div>
+                </div>
+
+                <div id="view-flashcards" class="mode-view hidden flex-col items-center justify-center min-h-full">
+                    <div class="text-center w-full">
+                        <i data-lucide="layers" class="w-10 h-10 mx-auto text-zinc-400 mb-3"></i>
+                        <h3 class="font-bold text-zinc-50">Concept Flashcards</h3>
+                        <p class="text-zinc-400 text-xs mt-1 mb-4">Generate flashcards from the active documents.</p>
+                        <button id="btn-generate-cards" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-500 hover:shadow-[0_0_16px_rgba(99,102,241,0.4)] transition-all">Generate Flashcards</button>
+                    </div>
+                </div>
+
+                <div id="view-quiz" class="mode-view hidden flex-col items-center justify-center min-h-full">
+                    <div class="text-center w-full">
+                        <i data-lucide="help-circle" class="w-10 h-10 mx-auto text-zinc-400 mb-3"></i>
+                        <h3 class="font-bold text-zinc-50">Document Quiz</h3>
+                        <p class="text-zinc-400 text-xs mt-1 mb-4">15 questions — MCQ + fill-in-the-blank.</p>
+                        <button id="btn-generate-quiz" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-500 hover:shadow-[0_0_16px_rgba(99,102,241,0.4)] transition-all">Take a Quiz</button>
+                    </div>
+                </div>
+
+                <div id="view-recall" class="mode-view hidden flex-col items-center justify-center min-h-full">
+                    <div class="text-center w-full">
+                        <i data-lucide="brain" class="w-10 h-10 mx-auto text-zinc-400 mb-3"></i>
+                        <h3 class="font-bold text-zinc-50">Active Recall</h3>
+                        <p class="text-zinc-400 text-xs mt-1 mb-1">Summarises pages 1 → current page.</p>
+                        <p id="recall-page-hint" class="text-zinc-500 text-xs mb-4">Open a document to begin.</p>
+                        <button id="btn-generate-recall" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-500 hover:shadow-[0_0_16px_rgba(99,102,241,0.4)] transition-all">Start Recall Session</button>
+                    </div>
+                </div>
+
+                <div id="view-himmel" class="mode-view hidden flex-col gap-4 pt-4 pb-2 px-1">
+
+                    <!-- Step 1: Free-form input -->
+                    <div id="ae-step-input" class="flex flex-col gap-4">
+                        <div>
+                            <p class="font-bold text-white text-sm mb-1">Alter Ego Mode</p>
+                            <p class="text-zinc-500 text-xs leading-relaxed">Describe your alter ego — any hero, leader, or archetype you want to become. The AI will generate your personal sidekick to guide you through your tasks.</p>
+                        </div>
+
+                        <div class="flex flex-col gap-2">
+                            <label class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Who do you want to become?</label>
+                            <textarea id="ae-input" rows="3" placeholder="e.g. Sherlock Holmes, a stoic Roman emperor, a Navy SEAL commander, Elon Musk, a medieval knight..." class="w-full bg-[#111111] border border-[#262626] rounded-xl px-3 py-2.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 resize-none leading-relaxed"></textarea>
+                        </div>
+
+                        <!-- Quick suggestions -->
+                        <div class="flex flex-col gap-1.5">
+                            <p class="text-[10px] text-zinc-600 uppercase tracking-widest">Quick picks</p>
+                            <div class="flex flex-wrap gap-1.5">
+                                <button class="ae-suggestion px-2.5 py-1 rounded-lg border border-[#262626] bg-[#171717] hover:border-zinc-500 hover:bg-[#1e1e1e] text-zinc-400 hover:text-white text-[11px] transition-all">Mr. Wayne</button>
+                                <button class="ae-suggestion px-2.5 py-1 rounded-lg border border-[#262626] bg-[#171717] hover:border-zinc-500 hover:bg-[#1e1e1e] text-zinc-400 hover:text-white text-[11px] transition-all">Mr. Stark</button>
+                                <button class="ae-suggestion px-2.5 py-1 rounded-lg border border-[#262626] bg-[#171717] hover:border-zinc-500 hover:bg-[#1e1e1e] text-zinc-400 hover:text-white text-[11px] transition-all">Superhuman</button>
+                                <button class="ae-suggestion px-2.5 py-1 rounded-lg border border-[#262626] bg-[#171717] hover:border-zinc-500 hover:bg-[#1e1e1e] text-zinc-400 hover:text-white text-[11px] transition-all">Sherlock Holmes</button>
+                                <button class="ae-suggestion px-2.5 py-1 rounded-lg border border-[#262626] bg-[#171717] hover:border-zinc-500 hover:bg-[#1e1e1e] text-zinc-400 hover:text-white text-[11px] transition-all">Marcus Aurelius</button>
+                            </div>
+                        </div>
+
+                        <button id="ae-generate-btn" class="w-full py-2.5 bg-indigo-600 text-white font-semibold rounded-xl text-sm hover:bg-indigo-500 hover:shadow-[0_0_16px_rgba(99,102,241,0.4)] active:scale-95 transition-all">
+                            Generate My Sidekick →
+                        </button>
+                    </div>
+
+                    <!-- Step 2: Loading -->
+                    <div id="ae-step-loading" class="hidden flex-col items-center gap-3 py-8 text-center">
+                        <div class="w-7 h-7 border-2 border-[#262626] border-t-indigo-400 rounded-full animate-spin"></div>
+                        <p class="text-zinc-500 text-xs">Summoning your sidekick…</p>
+                    </div>
+
+                    <!-- Step 3: Preview & confirm -->
+                    <div id="ae-step-confirm" class="hidden flex-col gap-3">
+                        <button id="ae-back-btn" class="text-zinc-600 hover:text-zinc-300 text-xs transition-colors self-start flex items-center gap-1">
+                            ← Try a different alter ego
+                        </button>
+                        <div class="bg-[#111111] border border-[#262626] rounded-xl p-4 flex flex-col gap-3">
+                            <div>
+                                <p class="text-[10px] text-zinc-600 uppercase tracking-widest font-bold mb-2">Your alter ego</p>
+                                <p id="ae-confirm-hero" class="font-bold text-white text-base leading-tight"></p>
+                            </div>
+                            <div class="border-t border-[#262626] pt-3">
+                                <p class="text-[10px] text-zinc-600 uppercase tracking-widest font-bold mb-1">Guided by</p>
+                                <p id="ae-confirm-sidekick" class="font-semibold text-indigo-400 text-sm"></p>
+                                <p id="ae-confirm-desc" class="text-xs text-zinc-500 mt-1 leading-relaxed"></p>
+                            </div>
+                            <button id="btn-adopt-himmel" class="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl text-sm hover:bg-indigo-500 hover:shadow-[0_0_16px_rgba(99,102,241,0.4)] active:scale-95 transition-all">
+                                Enter Alter Ego Mode
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div id="loading-overlay" class="hidden absolute inset-0 bg-[#111111]/80 backdrop-blur-sm z-50 flex items-center justify-center flex-col">
+                <div class="w-8 h-8 border-4 border-[#262626] border-t-indigo-400 rounded-full animate-spin mb-3"></div>
+                <p id="loading-text" class="text-sm font-medium text-zinc-50">Thinking...</p>
+            </div>
+
+            <div id="chat-input-area" class="p-3 bg-[#111111] border-t border-[#262626]">
+                <div class="relative flex items-end bg-[#111111] border border-[#262626] rounded-lg focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-indigo-500 transition-shadow">
+                    <textarea id="chat-input" rows="1" class="w-full bg-transparent p-3 pr-12 text-sm text-white placeholder-zinc-600 resize-none focus:outline-none max-h-32" placeholder="Ask about the active documents..."></textarea>
+                    <button id="btn-send-chat" class="absolute right-2 bottom-2 p-1.5 bg-indigo-600 text-white rounded-md hover:bg-indigo-500 transition-colors disabled:opacity-50">
+                        <i data-lucide="arrow-up" class="w-4 h-4"></i>
+                    </button>
+                </div>
+                <div class="text-[10px] text-zinc-500 text-center mt-2 flex items-center justify-center gap-1">
+                    Powered by <span class="font-semibold text-zinc-400">Gemini Flash</span>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ===== RECALL MODAL ===== -->
+    <div id="recall-modal" class="hidden fixed inset-0 z-[100] bg-black/85 backdrop-blur-sm flex items-start justify-center overflow-y-auto py-8 px-4">
+        <div class="w-full max-w-2xl flex flex-col gap-5">
+
+            <!-- Header -->
+            <div class="flex items-center justify-between sticky top-0 bg-[#0a0a0a]/95 backdrop-blur-sm py-3 z-10 border-b border-[#262626]">
+                <div>
+                    <h2 class="font-bold text-white text-base flex items-center gap-2">
+                        <i data-lucide="brain" class="w-4 h-4 text-indigo-400"></i> Active Recall
+                    </h2>
+                    <p id="recall-modal-subtitle" class="text-zinc-400 text-xs mt-0.5"></p>
+                </div>
+                <button id="recall-close" class="text-zinc-400 hover:text-white transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Summary points -->
+            <div id="recall-points" class="flex flex-col gap-3"></div>
+
+            <!-- Loading state -->
+            <div id="recall-loading" class="hidden flex-col items-center gap-3 py-12 text-center">
+                <div class="w-8 h-8 border-4 border-[#262626] border-t-indigo-400 rounded-full animate-spin"></div>
+                <p class="text-zinc-400 text-sm">Summarising pages 1 → <span id="recall-loading-page"></span>…</p>
+            </div>
+
+        </div>
+    </div>
+    <!-- ===== END RECALL MODAL ===== -->
+
+    <!-- ===== FLASHCARD MODAL ===== -->
+    <div id="flashcard-modal" class="hidden fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm">
+        <style>
+            .fc-card { perspective: 1200px; }
+            .fc-inner {
+                position: relative; width: 100%; height: 100%;
+                transition: transform 0.65s cubic-bezier(0.4, 0.2, 0.2, 1);
+                transform-style: preserve-3d;
+            }
+            .fc-inner.flipped { transform: rotateY(180deg); }
+            .fc-face {
+                position: absolute; inset: 0;
+                backface-visibility: hidden;
+                -webkit-backface-visibility: hidden;
+            }
+            .fc-back { transform: rotateY(180deg); }
+
+            /* progress bar fill */
+            #fc-progress-fill { transition: width 0.4s ease; }
+        </style>
+
+        <div class="relative w-full max-w-xl mx-4 flex flex-col gap-6">
+
+            <!-- Header row -->
+            <div class="flex items-center justify-between">
+                <span id="fc-deck-label" class="text-xs font-bold text-zinc-300 uppercase tracking-widest"></span>
+                <button id="fc-close" class="text-zinc-400 hover:text-zinc-100 transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Progress bar -->
+            <div class="w-full h-1 bg-[#1e1e1e] rounded-full overflow-hidden">
+                <div id="fc-progress-fill" class="h-full bg-indigo-400 rounded-full" style="width:0%"></div>
+            </div>
+
+            <!-- Card -->
+            <div class="fc-card w-full h-72 cursor-pointer select-none" id="fc-card-wrapper">
+                <div class="fc-inner" id="fc-inner">
+                    <!-- Front -->
+                    <div class="fc-face fc-front bg-[#171717] border border-[#262626] rounded-2xl p-8 flex flex-col items-center justify-center gap-4 shadow-2xl">
+                        <span class="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Question</span>
+                        <p id="fc-front-text" class="text-xl font-bold text-zinc-100 text-center leading-snug"></p>
+                        <span class="text-[10px] text-zinc-500 mt-auto">Click to reveal answer</span>
+                    </div>
+                    <!-- Back -->
+                    <div class="fc-face fc-back bg-[#111111] border border-indigo-500/20 rounded-2xl p-8 flex flex-col items-center justify-center gap-4 shadow-2xl">
+                        <span class="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-300">Answer</span>
+                        <p id="fc-back-text" class="text-base text-white text-center leading-relaxed"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Counter -->
+            <p id="fc-counter" class="text-center text-xs font-medium text-zinc-400"></p>
+
+            <!-- Action buttons (shown after flip) -->
+            <div id="fc-actions" class="hidden flex gap-3">
+                <button id="fc-btn-learning" class="flex-1 py-2.5 rounded-xl border border-indigo-600 bg-[#171717] text-zinc-50 text-sm font-semibold hover:bg-[#1e1e1e] transition-colors flex items-center justify-center gap-2">
+                    <i data-lucide="refresh-ccw" class="w-4 h-4"></i> Still Learning
+                </button>
+                <button id="fc-btn-known" class="flex-1 py-2.5 rounded-xl bg-indigo-500 text-white text-sm font-bold hover:bg-indigo-400 transition-colors flex items-center justify-center gap-2">
+                    <i data-lucide="check" class="w-4 h-4"></i> Got It
+                </button>
+            </div>
+
+            <!-- Finished state -->
+            <div id="fc-finished" class="hidden flex-col items-center gap-4 text-center">
+                <i data-lucide="party-popper" class="w-10 h-10 text-zinc-50"></i>
+                <p class="text-zinc-100 font-bold text-lg">Deck complete!</p>
+                <p id="fc-score-text" class="text-zinc-400 text-sm"></p>
+                <button id="fc-btn-restart" class="mt-2 px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-500 transition-colors">
+                    Restart Deck
+                </button>
+            </div>
+        </div>
+    </div>
+    <!-- ===== END FLASHCARD MODAL ===== -->
+
+    <!-- ===== QUIZ MODAL ===== -->
+    <div id="quiz-modal" class="hidden fixed inset-0 z-[100] bg-black/85 backdrop-blur-sm flex items-start justify-center overflow-y-auto py-8 px-4">
+        <div class="w-full max-w-2xl flex flex-col gap-5">
+
+            <!-- Header -->
+            <div class="flex items-center justify-between sticky top-0 bg-[#0a0a0a]/95 backdrop-blur-sm py-3 z-10 border-b border-[#262626]">
+                <div>
+                    <h2 class="font-bold text-zinc-50 text-base">Document Quiz</h2>
+                    <p id="qz-subtitle" class="text-zinc-400 text-xs mt-0.5"></p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div id="qz-hint-counter" class="flex items-center gap-1.5 bg-[#171717] border border-[#262626] px-3 py-1 rounded-full text-xs font-semibold text-zinc-50">
+                        <i data-lucide="lightbulb" class="w-3 h-3"></i>
+                        <span id="qz-hints-left">5</span> hints left
+                    </div>
+                    <button id="qz-close" class="text-zinc-400 hover:text-zinc-100 transition-colors">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Questions rendered here -->
+            <div id="qz-questions" class="flex flex-col gap-6"></div>
+
+            <!-- Submit button -->
+            <button id="qz-submit" class="w-full py-3 bg-indigo-500 text-white font-bold rounded-xl hover:bg-indigo-400 transition-colors text-sm sticky bottom-4">
+                Submit Quiz
+            </button>
+
+            <!-- Results banner (shown after submit) -->
+            <div id="qz-results" class="hidden flex-col items-center gap-4 p-6 bg-[#171717] border border-[#262626] rounded-2xl text-center">
+                <i data-lucide="bar-chart-2" class="w-10 h-10 text-zinc-50"></i>
+                <p class="text-zinc-100 font-bold text-xl">Quiz Complete!</p>
+                <p id="qz-score-text" class="text-white text-sm"></p>
+                <div id="qz-grade" class="text-4xl font-black text-zinc-50"></div>
+                <button id="qz-retake" class="mt-2 px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-500 transition-colors">
+                    Retake Same Quiz
+                </button>
+            </div>
+
+        </div>
+    </div>
+    <!-- ===== END QUIZ MODAL ===== -->
+
+    <script>
+        const GEMINI_MODEL = 'gemini-2.5-flash';
+
+        const state = {
+            apiKey: '',
+            docs: [],
+            activeViewerDocId: null,
+            viewerPage: 1,
+            viewerScale: 1.0,
+            highlights: [],
+            chatHistory: [],
+            mode: 'chat',
+            flashcards: [],
+            currentCardIndex: 0,
+            quiz: [],
+            alterEgo: null,     // { key, hero, sidekick, emoji, systemPrompt, greeting }
+            alterEgoActive: false
+        };
+
+        let pdfDoc = null;
+        let pdfRenderTask = null;
+
+        const els = {
+            apiKeyInput: document.getElementById('api-key-input'),
+            apiIndicator: document.getElementById('api-indicator'),
+            apiStatusText: document.getElementById('api-status-text'),
+            dropZone: document.getElementById('drop-zone'),
+            fileInput: document.getElementById('file-input'),
+            docList: document.getElementById('doc-list'),
+            emptyDocs: document.getElementById('empty-docs'),
+            highlightList: document.getElementById('highlight-list'),
+            emptyHighlights: document.getElementById('empty-highlights'),
+            pdfContainer: document.getElementById('pdf-container'),
+            pdfCanvas: document.getElementById('pdf-canvas'),
+            textLayer: document.getElementById('text-layer'),
+            pdfEmptyState: document.getElementById('pdf-empty-state'),
+            currDocTitle: document.getElementById('current-doc-title'),
+            pageNum: document.getElementById('page-num'),
+            pageCount: document.getElementById('page-count'),
+            zoomLevel: document.getElementById('zoom-level'),
+            btnPrevPage: document.getElementById('btn-prev-page'),
+            btnNextPage: document.getElementById('btn-next-page'),
+            btnZoomIn: document.getElementById('btn-zoom-in'),
+            btnZoomOut: document.getElementById('btn-zoom-out'),
+            highlightPopup: document.getElementById('highlight-popup'),
+            btnSendHighlight: document.getElementById('btn-send-highlight'),
+            viewerScrollArea: document.getElementById('viewer-scroll-area'),
+            modeTabs: document.querySelectorAll('.mode-tab'),
+            modeViews: document.querySelectorAll('.mode-view'),
+            chatInputArea: document.getElementById('chat-input-area'),
+            chatInput: document.getElementById('chat-input'),
+            btnSendChat: document.getElementById('btn-send-chat'),
+            viewChat: document.getElementById('view-chat'),
+            loadingOverlay: document.getElementById('loading-overlay'),
+            loadingText: document.getElementById('loading-text'),
+            alterEgoBanner: document.getElementById('himmel-active-banner'),
+            btnExitAlterEgo: document.getElementById('btn-disable-himmel'),
+            btnGenerateCards: document.getElementById('btn-generate-cards'),
+            btnGenerateQuiz: document.getElementById('btn-generate-quiz'),
+            btnGenerateRecall: document.getElementById('btn-generate-recall'),
+            btnEnterAlterEgo: document.getElementById('btn-adopt-himmel')
+        };
+
+        lucide.createIcons();
+
+        // --- Auto-load API key from landing page ---
+        (function() {
+            const saved = localStorage.getItem('himmyhelp_api_key');
+            if (saved) {
+                state.apiKey = saved;
+                els.apiKeyInput.value = saved;
+                els.apiIndicator.classList.replace('bg-red-500', 'bg-green-400');
+                els.apiStatusText.textContent = 'Connected';
+            }
+        })();
+
+        els.apiKeyInput.addEventListener('input', (e) => {
+            state.apiKey = e.target.value.trim();
+            if (state.apiKey.length > 20) {
+                els.apiIndicator.classList.replace('bg-red-500', 'bg-green-400');
+                els.apiStatusText.textContent = 'Connected';
+            } else {
+                els.apiIndicator.classList.replace('bg-green-400', 'bg-red-500');
+                els.apiStatusText.textContent = 'Disconnected';
+            }
+        });
+
+        const generateId = () => Math.random().toString(36).substr(2, 9);
+        const showLoading = (text) => { els.loadingText.textContent = text; els.loadingOverlay.classList.remove('hidden'); };
+        const hideLoading = () => { els.loadingOverlay.classList.add('hidden'); };
+
+
+        const setupResizer = (resizerId, prevPanelId, nextPanelId) => {
+            const resizer = document.getElementById(resizerId);
+            const prevPanel = document.getElementById(prevPanelId);
+            let isResizing = false;
+
+            resizer.addEventListener('mousedown', (e) => {
+                isResizing = true;
+                resizer.classList.add('resizing');
+                document.body.style.cursor = 'col-resize';
+                e.preventDefault();
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isResizing) return;
+                const containerRect = document.querySelector('main').getBoundingClientRect();
+                let newWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100;
+
+                if (resizerId === 'resizer-1') {
+                    if (newWidth < 15) newWidth = 15;
+                    if (newWidth > 40) newWidth = 40;
+                    prevPanel.style.width = `${newWidth}%`;
+                } else if (resizerId === 'resizer-2') {
+                    let rightNewWidth = ((containerRect.right - e.clientX) / containerRect.width) * 100;
+                    if (rightNewWidth < 20) rightNewWidth = 20;
+                    if (rightNewWidth > 50) rightNewWidth = 50;
+                    document.getElementById('panel-right').style.width = `${rightNewWidth}%`;
+                }
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (isResizing) {
+                    isResizing = false;
+                    resizer.classList.remove('resizing');
+                    document.body.style.cursor = 'default';
+                }
+            });
+        };
+        setupResizer('resizer-1', 'panel-left', 'panel-center');
+        setupResizer('resizer-2', 'panel-center', 'panel-right');
+
+        els.dropZone.addEventListener('dragover', (e) => { e.preventDefault(); els.dropZone.classList.add('bg-[#1e1e1e]'); });
+        els.dropZone.addEventListener('dragleave', () => els.dropZone.classList.remove('bg-[#1e1e1e]'));
+        els.dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            els.dropZone.classList.remove('bg-[#1e1e1e]');
+            handleFiles(e.dataTransfer.files);
+        });
+        els.fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+
+        async function handleFiles(files) {
+            for (let file of files) {
+                if (file.type !== 'application/pdf') continue;
+                showLoading('Parsing PDF...');
+                try {
+                    const arrayBuffer = await file.arrayBuffer();
+                    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer.slice(0) }).promise;
+
+                    const docId = generateId();
+                    const numPages = pdf.numPages;
+                    const textChunks = [];
+
+                    for (let i = 1; i <= numPages; i++) {
+                        const page = await pdf.getPage(i);
+                        const textContent = await page.getTextContent();
+                        const pageText = textContent.items.map(item => item.str).join(' ');
+                        textChunks.push({ page: i, text: pageText });
+                    }
+
+                    const newDoc = { id: docId, file: arrayBuffer, name: file.name, numPages: numPages, active: true, textChunks: textChunks };
+                    state.docs.push(newDoc);
+                    renderDocList();
+
+                    if (!state.activeViewerDocId) openDocInViewer(docId);
+                } catch (err) {
+                    console.error(err);
+                    alert('Error parsing PDF.');
+                }
+                hideLoading();
+            }
+        }
+
+        function renderDocList() {
+            els.docList.innerHTML = '';
+            els.emptyDocs.classList.toggle('hidden', state.docs.length > 0);
+
+            state.docs.forEach(doc => {
+                const li = document.createElement('li');
+                li.className = `flex items-center gap-3 p-2 rounded-md transition-colors cursor-pointer group ${state.activeViewerDocId === doc.id ? 'bg-[#1e1e1e] border border-indigo-500' : 'hover:bg-[#171717] border border-transparent'}`;
+
+                li.innerHTML = `
+                    <input type="checkbox" class="w-4 h-4 rounded border-[#262626] bg-[#111111] text-zinc-300 focus:ring-indigo-500 cursor-pointer" ${doc.active ? 'checked' : ''} onchange="toggleDocActive('${doc.id}', this.checked)">
+                    <div class="flex-1 overflow-hidden" onclick="openDocInViewer('${doc.id}')">
+                        <p class="text-sm font-medium text-white truncate">${doc.name}</p>
+                        <p class="text-xs text-zinc-400">${doc.numPages} pages</p>
+                    </div>
+                    <button class="opacity-0 group-hover:opacity-100 p-1 text-zinc-500 hover:text-red-400 transition-opacity" onclick="deleteDoc('${doc.id}', event)" title="Remove">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                `;
+                els.docList.appendChild(li);
+            });
+            lucide.createIcons();
+        }
+
+        window.toggleDocActive = (id, isActive) => { const doc = state.docs.find(d => d.id === id); if (doc) doc.active = isActive; };
+
+        window.deleteDoc = (id, e) => {
+            e.stopPropagation();
+            state.docs = state.docs.filter(d => d.id !== id);
+            state.highlights = state.highlights.filter(h => h.docId !== id);
+            if (state.activeViewerDocId === id) {
+                state.activeViewerDocId = null;
+                els.pdfContainer.classList.add('hidden');
+                els.pdfEmptyState.classList.remove('hidden');
+                els.currDocTitle.textContent = "No Document Selected";
+                els.pageNum.textContent = '0';
+                els.pageCount.textContent = '0';
+            }
+            renderDocList(); renderHighlights();
+        };
+
+        async function openDocInViewer(id) {
+            state.activeViewerDocId = id; state.viewerPage = 1;
+            renderDocList();
+
+            const doc = state.docs.find(d => d.id === id);
+            els.currDocTitle.textContent = doc.name;
+            els.pageCount.textContent = doc.numPages;
+
+            els.pdfEmptyState.classList.add('hidden');
+            els.pdfContainer.classList.remove('hidden');
+
+            try {
+                pdfDoc = await pdfjsLib.getDocument({ data: doc.file.slice(0) }).promise;
+                renderPage(state.viewerPage);
+            } catch (err) { console.error(err); }
+        }
+
+        async function renderPage(num) {
+            if (!pdfDoc) return;
+            if (pdfRenderTask) try { await pdfRenderTask.cancel(); } catch (e) {}
+
+            const page = await pdfDoc.getPage(num);
+            const viewport = page.getViewport({ scale: state.viewerScale });
+
+            els.pdfCanvas.height = viewport.height; els.pdfCanvas.width = viewport.width;
+            els.pdfContainer.style.width = `${viewport.width}px`; els.pdfContainer.style.height = `${viewport.height}px`;
+
+            const renderContext = { canvasContext: els.pdfCanvas.getContext('2d'), viewport: viewport };
+            pdfRenderTask = page.render(renderContext);
+            await pdfRenderTask.promise;
+
+            els.textLayer.innerHTML = ''; els.textLayer.style.width = `${viewport.width}px`; els.textLayer.style.height = `${viewport.height}px`;
+            const textContent = await page.getTextContent();
+
+            textContent.items.forEach(item => {
+                const tx = pdfjsLib.Util.transform(viewport.transform, item.transform);
+                const fontHeight = Math.sqrt((tx[2] * tx[2]) + (tx[3] * tx[3]));
+                const span = document.createElement('span');
+                span.textContent = item.str;
+                span.style.left = `${tx[4]}px`; span.style.top = `${tx[5] - fontHeight}px`;
+                span.style.fontSize = `${fontHeight}px`; span.style.fontFamily = item.fontName;
+
+                const docHighlights = state.highlights.filter(h => h.docId === state.activeViewerDocId && h.page === state.viewerPage);
+                docHighlights.forEach(h => { if (h.text.includes(item.str.trim()) && item.str.trim().length > 3) span.classList.add(`highlight-${h.color}`); });
+                els.textLayer.appendChild(span);
+            });
+            els.pageNum.textContent = num; updatePaginationButtons();
+        }
+
+        function updatePaginationButtons() {
+            els.btnPrevPage.disabled = state.viewerPage <= 1;
+            els.btnNextPage.disabled = !pdfDoc || state.viewerPage >= pdfDoc.numPages;
+        }
+
+        els.btnPrevPage.addEventListener('click', () => { if(state.viewerPage > 1) renderPage(--state.viewerPage); });
+        els.btnNextPage.addEventListener('click', () => { if(pdfDoc && state.viewerPage < pdfDoc.numPages) renderPage(++state.viewerPage); });
+        els.btnZoomIn.addEventListener('click', () => { state.viewerScale += 0.2; els.zoomLevel.textContent = `${Math.round(state.viewerScale*100)}%`; renderPage(state.viewerPage); });
+        els.btnZoomOut.addEventListener('click', () => { state.viewerScale = Math.max(0.5, state.viewerScale - 0.2); els.zoomLevel.textContent = `${Math.round(state.viewerScale*100)}%`; renderPage(state.viewerPage); });
+
+        let currentSelectionStr = '';
+        els.textLayer.addEventListener('mouseup', () => {
+            const selection = window.getSelection(); const text = selection.toString().trim();
+            if (text.length > 0) {
+                currentSelectionStr = text;
+                const range = selection.getRangeAt(0); const rect = range.getBoundingClientRect(); const containerRect = els.viewerScrollArea.getBoundingClientRect();
+                els.highlightPopup.style.left = `${rect.left - containerRect.left + (rect.width/2) + els.viewerScrollArea.scrollLeft}px`;
+                els.highlightPopup.style.top = `${rect.top - containerRect.top + els.viewerScrollArea.scrollTop - 10}px`;
+                els.highlightPopup.classList.remove('hidden');
+            } else { els.highlightPopup.classList.add('hidden'); }
+        });
+
+        els.viewerScrollArea.addEventListener('scroll', () => els.highlightPopup.classList.add('hidden'));
+        document.addEventListener('mousedown', (e) => { if (!els.highlightPopup.contains(e.target) && e.target.id !== 'text-layer' && !els.textLayer.contains(e.target)) els.highlightPopup.classList.add('hidden'); });
+
+        document.querySelectorAll('.color-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => { saveHighlight(e.target.dataset.color); els.highlightPopup.classList.add('hidden'); window.getSelection().removeAllRanges(); });
+        });
+
+        els.btnSendHighlight.addEventListener('click', () => {
+            if (currentSelectionStr) {
+                switchMode('chat');
+                const docName = state.docs.find(d => d.id === state.activeViewerDocId)?.name || 'Document';
+                els.chatInput.value = `Regarding this passage:\n> "${currentSelectionStr}" [${docName}, p.${state.viewerPage}]\n\n`;
+                els.chatInput.focus(); els.highlightPopup.classList.add('hidden'); window.getSelection().removeAllRanges();
+            }
+        });
+
+        function saveHighlight(color) {
+            if (!currentSelectionStr || !state.activeViewerDocId) return;
+            state.highlights.push({ id: generateId(), docId: state.activeViewerDocId, page: state.viewerPage, text: currentSelectionStr, color: color });
+            renderHighlights(); renderPage(state.viewerPage);
+        }
+
+        function renderHighlights() {
+            els.highlightList.innerHTML = ''; els.emptyHighlights.classList.toggle('hidden', state.highlights.length > 0);
+            state.highlights.forEach(h => {
+                const doc = state.docs.find(d => d.id === h.docId); if (!doc) return;
+                const colorMap = { yellow: 'bg-indigo-400', green: 'bg-green-400', blue: 'bg-blue-400', pink: 'bg-pink-400' };
+                const li = document.createElement('li');
+                li.className = 'text-xs p-2 rounded bg-[#171717] border border-[#262626] hover:border-indigo-500/30 cursor-pointer shadow-sm relative group';
+                li.innerHTML = `
+                    <div class="flex items-start gap-2">
+                        <div class="w-2 h-2 rounded-full mt-1 flex-shrink-0 ${colorMap[h.color]}"></div>
+                        <div class="flex-1 overflow-hidden" onclick="jumpToHighlight('${h.docId}', ${h.page})">
+                            <p class="text-white line-clamp-3 italic">"${h.text}"</p>
+                            <p class="text-[10px] text-zinc-400 mt-1 font-medium">${doc.name} (p.${h.page})</p>
+                        </div>
+                    </div>
+                    <button class="absolute top-1 right-1 opacity-0 group-hover:opacity-100 p-1 text-zinc-500 hover:text-red-400" onclick="deleteHighlight('${h.id}')"><i data-lucide="x" class="w-3 h-3"></i></button>
+                `;
+                els.highlightList.appendChild(li);
+            });
+            lucide.createIcons();
+        }
+
+        window.jumpToHighlight = (docId, page) => {
+            if (state.activeViewerDocId !== docId) { openDocInViewer(docId).then(() => { state.viewerPage = page; renderPage(page); }); }
+            else { state.viewerPage = page; renderPage(page); }
+        };
+        window.deleteHighlight = (id) => { state.highlights = state.highlights.filter(h => h.id !== id); renderHighlights(); renderPage(state.viewerPage); };
+
+        function getActiveDocsContext() {
+            const activeDocs = state.docs.filter(d => d.active);
+            if (activeDocs.length === 0) return null;
+            let contextStr = "SOURCE DOCUMENTS:\n\n";
+            activeDocs.forEach(doc => {
+                contextStr += `--- DOCUMENT: ${doc.name} ---\n`;
+                doc.textChunks.forEach(chunk => { contextStr += `[Page ${chunk.page}]: ${chunk.text}\n\n`; });
+            });
+            return contextStr;
+        }
+
+        async function callGemini(promptText, systemInstructionText, schema = null, isStream = false, uiCallback = null) {
+            if (!state.apiKey) return alert("Please enter a Gemini API Key in the header."), null;
+
+            const payload = {
+                contents: [{ parts: [{ text: promptText }] }],
+                systemInstruction: { parts: [{ text: systemInstructionText }] }
+            };
+            if (schema) payload.generationConfig = { responseMimeType: "application/json", responseSchema: schema };
+
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${state.apiKey}`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+                });
+                if (!response.ok) throw new Error(await response.text());
+
+                const data = await response.json();
+                const textResult = data.candidates[0].content.parts[0].text;
+
+                if (isStream && uiCallback) {
+                    let index = 0; const chunkSize = 4;
+                    return new Promise((resolve) => {
+                        const interval = setInterval(() => {
+                            if (index < textResult.length) { uiCallback(textResult.substring(0, index + chunkSize), false); index += chunkSize; }
+                            else { clearInterval(interval); uiCallback(textResult, true); resolve(textResult); }
+                        }, 10);
+                    });
+                }
+                return textResult;
+            } catch (err) {
+                console.error("API Error:", err);
+                let msg = "Unknown error.";
+                try {
+                    const parsed = JSON.parse(err.message);
+                    const code = parsed.error?.code;
+                    const status = parsed.error?.status;
+                    const detail = parsed.error?.message || '';
+                    if (code === 429) {
+                        msg = "⚠️ Quota exceeded — you've hit Google's free tier limit (20 requests/day).\n\nOptions:\n• Wait until midnight (Pacific time) for it to reset\n• Add billing at aistudio.google.com to remove the limit\n• Use a different Google account with a fresh key";
+                    } else if (code === 400) {
+                        msg = "❌ Bad request — your API key may be invalid or the model name is wrong.";
+                    } else if (code === 403) {
+                        msg = "🔒 Permission denied — your API key doesn't have access to this model.";
+                    } else if (code === 401) {
+                        msg = "🔑 Invalid API key — please check you copied it correctly from aistudio.google.com.";
+                    } else {
+                        msg = `Error ${code} (${status}): ${detail.split('\n')[0]}`;
+                    }
+                } catch {
+                    msg = String(err);
+                }
+                alert(msg);
+                return null;
+            }
+        }
+
+        function switchMode(mode) {
+            state.mode = mode;
+            els.modeTabs.forEach(t => {
+                if(t.dataset.mode === mode) { t.classList.replace('border-transparent', 'border-indigo-400'); t.classList.replace('text-zinc-400', 'text-zinc-50'); }
+                else { t.classList.replace('border-indigo-400', 'border-transparent'); t.classList.replace('text-zinc-50', 'text-zinc-400'); }
+            });
+            els.modeViews.forEach(v => v.classList.add('hidden')); document.getElementById(`view-${mode}`).classList.remove('hidden');
+            if (mode === 'chat' || mode === 'himmel') els.chatInputArea.classList.remove('hidden'); else els.chatInputArea.classList.add('hidden');
+        }
+        els.modeTabs.forEach(tab => tab.addEventListener('click', (e) => switchMode(e.currentTarget.dataset.mode)));
+        els.chatInput.addEventListener('input', function() { this.style.height = 'auto'; this.style.height = (this.scrollHeight) + 'px'; });
+
+        els.btnSendChat.addEventListener('click', handleChat);
+        els.chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleChat(); } });
+
+        async function handleChat() {
+            const text = els.chatInput.value.trim(); if (!text) return;
+            const context = getActiveDocsContext(); if (!context) return alert("Activate a document first.");
+
+            appendChatMessage('user', text); els.chatInput.value = ''; els.chatInput.style.height = 'auto';
+
+            let sysPrompt = `You are HimmyHelp. Use the provided SOURCE DOCUMENTS. Cite the document name and page number when stating facts.`;
+            if (state.alterEgoActive && state.alterEgo) sysPrompt = state.alterEgo.systemPrompt + '\n\n---\n\nSOURCE DOCUMENTS:\n' + (getActiveDocsContext() || '(no documents loaded)');
+            sysPrompt += `\n\n${context}`;
+
+            const msgEl = createChatBubble('model'); els.viewChat.appendChild(msgEl); els.viewChat.scrollTop = els.viewChat.scrollHeight;
+            msgEl.querySelector('.markdown-body').innerHTML = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
+
+            const finalResponse = await callGemini(text, sysPrompt, null, true, (chunk, isDone) => {
+                msgEl.querySelector('.markdown-body').innerHTML = marked.parse(chunk); els.viewChat.scrollTop = els.viewChat.scrollHeight;
+            });
+            if (finalResponse) { state.chatHistory.push({ role: 'user', text: text }); state.chatHistory.push({ role: 'model', text: finalResponse }); }
+            else { msgEl.querySelector('.markdown-body').innerHTML = '<span class="text-red-400">Error generating response.</span>'; }
+        }
+
+        function appendChatMessage(role, text) {
+            const msgEl = createChatBubble(role); msgEl.querySelector('.markdown-body').innerHTML = marked.parse(text);
+            els.viewChat.appendChild(msgEl); els.viewChat.scrollTop = els.viewChat.scrollHeight;
+        }
+
+        function createChatBubble(role) {
+            const div = document.createElement('div'); div.className = `flex gap-3 ${role === 'user' ? 'flex-row-reverse' : ''}`;
+            const _aeActive = state.alterEgoActive && state.alterEgo;
+            const avatar = role === 'user'
+                ? `<div class="w-8 h-8 rounded-full bg-[#1e1e1e] flex items-center justify-center text-zinc-50 flex-shrink-0 border border-indigo-500/30"><i data-lucide="user" class="w-4 h-4"></i></div>`
+                : _aeActive
+                    ? `<div class="w-8 h-8 rounded-full bg-[#111111] border border-[#262626] flex items-center justify-center flex-shrink-0 text-base leading-none">${state.alterEgo.emoji}</div>`
+                    : `<div class="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center flex-shrink-0 shadow-sm"><i data-lucide="bot" class="w-4 h-4"></i></div>`;
+            const alignClass = role === 'user' ? 'items-end' : 'items-start'; const bgClass = role === 'user' ? 'bg-[#171717] border border-indigo-500/20' : 'bg-[#111111] border border-[#262626] shadow-sm';
+            div.innerHTML = `${avatar}<div class="flex flex-col ${alignClass} max-w-[85%]"><div class="p-3 rounded-xl ${bgClass} markdown-body text-sm text-white w-full overflow-hidden"></div></div>`;
+            lucide.createIcons({root: div}); return div;
+        }
+
+        // ==========================================
+        // FLASHCARD MODAL LOGIC
+        // ==========================================
+        const fcModal     = document.getElementById('flashcard-modal');
+        const fcInner     = document.getElementById('fc-inner');
+        const fcFront     = document.getElementById('fc-front-text');
+        const fcBack      = document.getElementById('fc-back-text');
+        const fcCounter   = document.getElementById('fc-counter');
+        const fcFill      = document.getElementById('fc-progress-fill');
+        const fcActions   = document.getElementById('fc-actions');
+        const fcFinished  = document.getElementById('fc-finished');
+        const fcScoreTxt  = document.getElementById('fc-score-text');
+        const fcDeckLabel = document.getElementById('fc-deck-label');
+
+        let fcIndex = 0, fcKnown = 0, fcIsFlipped = false;
+
+        function fcOpen() {
+            fcModal.classList.remove('hidden');
+            fcModal.classList.add('flex');
+            document.body.style.overflow = 'hidden';
+            lucide.createIcons({ root: fcModal });
+        }
+        function fcClose() {
+            fcModal.classList.add('hidden');
+            fcModal.classList.remove('flex');
+            document.body.style.overflow = '';
+        }
+        function fcRender() {
+            const cards = state.flashcards;
+            if (!cards.length) return;
+            const card = cards[fcIndex];
+            fcFront.textContent = card.front;
+            fcBack.textContent  = card.back;
+            fcCounter.textContent = `Card ${fcIndex + 1} of ${cards.length}`;
+            fcFill.style.width  = `${((fcIndex) / cards.length) * 100}%`;
+            fcDeckLabel.textContent = `${cards.length} cards`;
+            // reset flip
+            fcInner.classList.remove('flipped');
+            fcIsFlipped = false;
+            fcActions.classList.add('hidden');
+            fcFinished.classList.add('hidden');
+            fcFinished.classList.remove('flex');
+        }
+        function fcNext() {
+            if (fcIndex < state.flashcards.length - 1) {
+                fcIndex++;
+                fcRender();
+            } else {
+                // Finished
+                fcFill.style.width = '100%';
+                fcCounter.textContent = '';
+                fcActions.classList.add('hidden');
+                fcFinished.classList.remove('hidden');
+                fcFinished.classList.add('flex');
+                fcScoreTxt.textContent = `You marked ${fcKnown} of ${state.flashcards.length} cards as known.`;
+                lucide.createIcons({ root: fcFinished });
+            }
+        }
+
+        // Flip on card click
+        document.getElementById('fc-card-wrapper').addEventListener('click', () => {
+            fcInner.classList.toggle('flipped');
+            fcIsFlipped = !fcIsFlipped;
+            if (fcIsFlipped) {
+                setTimeout(() => {
+                    fcActions.classList.remove('hidden');
+                    fcActions.classList.add('flex');
+                    lucide.createIcons({ root: fcActions });
+                }, 350);
+            } else {
+                fcActions.classList.add('hidden');
+                fcActions.classList.remove('flex');
+            }
+        });
+
+        document.getElementById('fc-btn-known').addEventListener('click', (e) => {
+            e.stopPropagation(); fcKnown++; fcNext();
+        });
+        document.getElementById('fc-btn-learning').addEventListener('click', (e) => {
+            e.stopPropagation(); fcNext();
+        });
+        document.getElementById('fc-close').addEventListener('click', fcClose);
+        document.getElementById('fc-btn-restart').addEventListener('click', () => {
+            fcIndex = 0; fcKnown = 0;
+            fcFinished.classList.add('hidden');
+            fcFinished.classList.remove('flex');
+            fcRender();
+        });
+        // Close on backdrop click
+        fcModal.addEventListener('click', (e) => { if (e.target === fcModal) fcClose(); });
+
+        // --- 12 built-in starter flashcards (always available) ---
+        const STARTER_FLASHCARDS = [
+            { front: "What is active recall?", back: "Actively testing yourself on information rather than passively re-reading it. Closing the book and trying to remember forces your brain to strengthen the memory." },
+            { front: "What is spaced repetition?", back: "Reviewing information at increasing intervals over time (e.g. 1 day, 3 days, 1 week). This fights forgetting and locks information into long-term memory." },
+            { front: "What is the Feynman Technique?", back: "Explain a concept in simple language as if teaching it to a child. If you can't explain it simply, you don't understand it well enough yet." },
+            { front: "What is the Pomodoro Technique?", back: "Work in focused 25-minute blocks, then take a 5-minute break. After 4 blocks, take a longer 15–30 minute break. Keeps focus sharp and prevents burnout." },
+            { front: "What does 'interleaving' mean in studying?", back: "Mixing different topics or subjects in a single study session instead of finishing one before starting another. It feels harder but leads to deeper understanding." },
+            { front: "What is elaborative interrogation?", back: "Asking 'why?' and 'how?' as you study. Instead of just reading a fact, you explain why it's true. This builds stronger connections in memory." },
+            { front: "What is the difference between short-term and long-term memory?", back: "Short-term memory holds a small amount of info for a few seconds to minutes. Long-term memory can hold vast amounts of info for years — but info needs to be rehearsed to move there." },
+            { front: "What is a mind map?", back: "A diagram where you write a central idea and branch out related concepts. It helps you see how ideas connect and is useful for summarising a topic visually." },
+            { front: "What does 'retrieval practice' mean?", back: "The act of pulling information out of your memory, such as doing practice questions or writing from memory. Each retrieval attempt strengthens the memory trace." },
+            { front: "Why is sleep important for studying?", back: "During sleep, your brain consolidates memories — it replays and stores what you learned. Studying then sleeping is more effective than cramming all in one go." },
+            { front: "What is cognitive load?", back: "The mental effort required to process information. When too much is loaded at once, your brain struggles. Breaking complex topics into smaller chunks reduces cognitive load." },
+            { front: "What is the testing effect?", back: "The proven finding that taking tests on material — even before fully learning it — improves long-term retention more than additional studying does." },
+        ];
+
+        // Helper: robustly parse JSON from Ollama (handles markdown code fences)
+        function parseJSON(raw) {
+            let str = raw.trim();
+            // Strip ```json ... ``` or ``` ... ```
+            str = str.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+            return JSON.parse(str);
+        }
+
+        els.btnGenerateCards.addEventListener('click', async () => {
+            const context = getActiveDocsContext();
+
+            if (!context) return alert("Please upload and activate a document first. Flashcards are generated from your uploaded PDF.");
+
+            showLoading("Generating Flashcards...");
+            const schema = { type: "ARRAY", items: { type: "OBJECT", properties: { front: { type: "STRING" }, back: { type: "STRING" } }, required: ["front","back"] } };
+            const jsonStr = await callGemini(
+                `Generate exactly 12 flashcards covering the key concepts from the documents.
+                 Each "front" is a short clear question (max 15 words).
+                 Each "back" is 1-2 sentences max, in plain simple language — no jargon.
+                 Return a JSON array only. No extra text, no markdown fences.`,
+                "You are a study assistant. Keep answers short and simple. Context:\n\n" + context,
+                schema
+            );
+            hideLoading();
+            if (jsonStr) {
+                try {
+                    const parsed = parseJSON(jsonStr);
+                    if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].front && parsed[0].back) {
+                        state.flashcards = parsed;
+                        fcIndex = 0; fcKnown = 0;
+                        fcRender();
+                        fcOpen();
+                    } else {
+                        throw new Error("Bad shape");
+                    }
+                } catch(e) {
+                    alert("Failed to generate flashcards from your document. Please try again.");
+                }
+            }
+        });
+
+        // ==========================================
+        // QUIZ MODAL LOGIC
+        // ==========================================
+        const qzModal     = document.getElementById('quiz-modal');
+        const qzQuestions = document.getElementById('qz-questions');
+        const qzSubmit    = document.getElementById('qz-submit');
+        const qzResults   = document.getElementById('qz-results');
+        const qzScoreTxt  = document.getElementById('qz-score-text');
+        const qzGrade     = document.getElementById('qz-grade');
+        const qzSubtitle  = document.getElementById('qz-subtitle');
+        const qzHintsLeft = document.getElementById('qz-hints-left');
+
+        const QZ_MAX_HINTS = 5;
+        let qzHintsUsed = 0;
+
+        function qzUpdateHintCounter() {
+            const left = QZ_MAX_HINTS - qzHintsUsed;
+            qzHintsLeft.textContent = left;
+            const counter = document.getElementById('qz-hint-counter');
+            if (left === 0) {
+                counter.classList.remove('text-zinc-50', 'border-[#262626]');
+                counter.classList.add('text-zinc-600', 'border-indigo-900', 'opacity-60');
+            } else {
+                counter.classList.add('text-zinc-50', 'border-[#262626]');
+                counter.classList.remove('text-zinc-600', 'border-indigo-900', 'opacity-60');
+            }
+        }
+
+        function qzOpen()  { qzModal.classList.remove('hidden'); qzModal.classList.add('flex'); document.body.style.overflow = 'hidden'; lucide.createIcons({ root: qzModal }); }
+        function qzClose() { qzModal.classList.add('hidden');    qzModal.classList.remove('flex'); document.body.style.overflow = ''; }
+
+        function qzRender() {
+            qzQuestions.innerHTML = '';
+            qzResults.classList.add('hidden'); qzResults.classList.remove('flex');
+            qzSubmit.classList.remove('hidden');
+            qzHintsUsed = 0;
+            qzUpdateHintCounter();
+            qzSubtitle.textContent = `${state.quiz.length} questions — answer all, then submit`;
+
+            state.quiz.forEach((q, idx) => {
+                const wrap = document.createElement('div');
+                wrap.className = 'bg-[#171717] border border-[#262626] rounded-xl p-5 flex flex-col gap-3';
+                wrap.dataset.idx = idx;
+
+                const typeTag = q.type === 'fill'
+                    ? `<span class="text-[10px] font-bold uppercase tracking-widest text-zinc-500 bg-[#111111] px-2 py-0.5 rounded-full">Fill-in</span>`
+                    : `<span class="text-[10px] font-bold uppercase tracking-widest text-zinc-500 bg-[#111111] px-2 py-0.5 rounded-full">MCQ</span>`;
+
+                let inputHtml = '';
+                if (q.type === 'fill') {
+                    inputHtml = `<input type="text" id="qz-input-${idx}" placeholder="Type your answer…" class="w-full bg-[#111111] border border-[#262626] rounded-lg px-4 py-2.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">`;
+                } else {
+                    inputHtml = '<div class="flex flex-col gap-2">' + q.options.map((opt, oi) => {
+                        const id = `qz-${idx}-${oi}`;
+                        return `<label for="${id}" class="flex items-start gap-3 p-2.5 rounded-lg border border-transparent hover:bg-[#1e1e1e] hover:border-[#262626] cursor-pointer transition-colors">
+                            <input type="radio" name="qz-q${idx}" id="${id}" value="${opt}" class="mt-0.5 accent-indigo-500 flex-shrink-0">
+                            <span class="text-sm text-white">${opt}</span>
+                        </label>`;
+                    }).join('') + '</div>';
+                }
+
+                wrap.innerHTML = `
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="flex items-start gap-2 flex-1">
+                            <span class="text-zinc-400 font-bold text-sm flex-shrink-0">${idx + 1}.</span>
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-2">${typeTag}</div>
+                                <p class="text-zinc-100 font-semibold text-sm leading-snug">${q.question}</p>
+                            </div>
+                        </div>
+                        <button data-hint-idx="${idx}" class="qz-hint-btn flex-shrink-0 flex items-center gap-1 text-[10px] font-semibold text-zinc-400 hover:text-zinc-100 border border-[#262626] hover:border-indigo-600 rounded-lg px-2 py-1 transition-colors bg-[#111111]">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>
+                            Hint
+                        </button>
+                    </div>
+                    ${inputHtml}
+                    <div id="qz-hint-${idx}" class="hidden text-xs bg-indigo-900/30 border border-indigo-700/30 rounded-lg px-3 py-2 text-zinc-100 italic"></div>
+                    <div id="qz-fb-${idx}" class="hidden text-xs rounded-lg p-3 mt-1"></div>
+                `;
+                qzQuestions.appendChild(wrap);
+            });
+
+            // Attach hint button listeners
+            qzQuestions.querySelectorAll('.qz-hint-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const idx = parseInt(btn.dataset.hintIdx);
+                    const hintBox = document.getElementById(`qz-hint-${idx}`);
+
+                    // Already shown — toggle off
+                    if (!hintBox.classList.contains('hidden')) {
+                        hintBox.classList.add('hidden');
+                        return;
+                    }
+                    // Out of hints
+                    if (qzHintsUsed >= QZ_MAX_HINTS) {
+                        hintBox.textContent = "No hints remaining for this quiz.";
+                        hintBox.classList.remove('hidden');
+                        setTimeout(() => hintBox.classList.add('hidden'), 2000);
+                        return;
+                    }
+                    // Show hint
+                    qzHintsUsed++;
+                    qzUpdateHintCounter();
+                    btn.classList.add('opacity-40', 'pointer-events-none');
+                    hintBox.textContent = state.quiz[idx].hint || "No hint available for this question.";
+                    hintBox.classList.remove('hidden');
+                });
+            });
+        }
+
+        function qzEvaluate() {
+            let score = 0;
+            state.quiz.forEach((q, idx) => {
+                const fb = document.getElementById(`qz-fb-${idx}`);
+                fb.classList.remove('hidden');
+                let correct = false;
+
+                if (q.type === 'fill') {
+                    const raw = (document.getElementById(`qz-input-${idx}`)?.value || '').trim().toLowerCase().replace(/\s+/g, ' ');
+                    const ans = q.answer.trim().toLowerCase().replace(/\s+/g, ' ');
+                    correct = raw === ans;
+                    document.getElementById(`qz-input-${idx}`).disabled = true;
+                } else {
+                    const sel = document.querySelector(`input[name="qz-q${idx}"]:checked`);
+                    correct = sel && sel.value === q.answer;
+                    document.querySelectorAll(`input[name="qz-q${idx}"]`).forEach(el => el.disabled = true);
+                }
+
+                if (correct) {
+                    score++;
+                    fb.className = 'text-xs rounded-lg p-3 mt-1 bg-green-900/40 border border-green-600/50 text-green-300';
+                    fb.innerHTML = `<span class="font-bold text-green-400">✓ Correct!</span> ${q.explanation || ''}`;
+                } else {
+                    fb.className = 'text-xs rounded-lg p-3 mt-1 bg-red-900/30 border border-red-600/40 text-red-300';
+                    fb.innerHTML = `<span class="font-bold text-red-400">✗ Incorrect.</span> <span class="text-zinc-100">Correct answer: <strong>${q.answer}</strong></span>${q.explanation ? ' — ' + q.explanation : ''}`;
+                }
+            });
+            lucide.createIcons({ root: qzModal });
+
+            // Show results
+            qzSubmit.classList.add('hidden');
+            qzResults.classList.remove('hidden'); qzResults.classList.add('flex');
+            const pct = Math.round((score / state.quiz.length) * 100);
+            qzScoreTxt.textContent = `You got ${score} out of ${state.quiz.length} correct (${pct}%)`;
+            const gradeColor = pct >= 80 ? 'text-green-400' : pct >= 50 ? 'text-zinc-50' : 'text-red-400';
+            qzGrade.className = `text-4xl font-black ${gradeColor}`;
+            qzGrade.textContent = `${pct}%`;
+            lucide.createIcons({ root: qzResults });
+            qzModal.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        qzSubmit.addEventListener('click', qzEvaluate);
+        document.getElementById('qz-close').addEventListener('click', qzClose);
+        qzModal.addEventListener('click', (e) => { if (e.target === qzModal) qzClose(); });
+        document.getElementById('qz-retake').addEventListener('click', () => {
+            qzRender();
+            qzModal.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        els.btnGenerateQuiz.addEventListener('click', async () => {
+            const context = getActiveDocsContext(); if (!context) return alert("Please upload and activate a document first. The quiz is generated from your uploaded PDF.");
+            showLoading("Building Quiz...");
+            const schema = {
+                type: "ARRAY",
+                items: {
+                    type: "OBJECT",
+                    properties: {
+                        type:        { type: "STRING", enum: ["mcq", "fill"] },
+                        question:    { type: "STRING" },
+                        options:     { type: "ARRAY", items: { type: "STRING" } },
+                        answer:      { type: "STRING" },
+                        explanation: { type: "STRING" },
+                        hint:        { type: "STRING" }
+                    },
+                    required: ["type", "question", "answer", "hint"]
+                }
+            };
+            const jsonStr = await callGemini(
+                `Generate exactly 15 quiz questions from the documents: 10 MCQ (4 options each) and 5 fill-in-the-blank.
+                 Fill-in answers must be a single word or very short phrase (2-4 words max).
+                 MCQ options must include exactly one correct answer and 3 plausible distractors.
+                 For fill-in type, leave the options array empty [].
+                 For every question, write a hint field: a short nudge (1 sentence) that points the student in the right direction WITHOUT giving away the answer. The hint should reference a concept or category, not the answer itself.
+                 Cover a broad range of topics from the document. Keep language clear and simple.`,
+                "You are a fair and thorough examiner. Make sure questions test real understanding, not trivia. Context:\n\n" + context,
+                schema
+            );
+            hideLoading();
+            if (jsonStr) {
+                try {
+                    state.quiz = JSON.parse(jsonStr);
+                    qzRender();
+                    qzOpen();
+                } catch(e) { alert("Failed to parse quiz. Please try again."); }
+            }
+        });
+
+        // ==========================================
+        // RECALL MODAL LOGIC
+        // ==========================================
+        const recallModal       = document.getElementById('recall-modal');
+        const recallPoints      = document.getElementById('recall-points');
+        const recallLoadingEl   = document.getElementById('recall-loading');
+        const recallLoadingPage = document.getElementById('recall-loading-page');
+        const recallSubtitle    = document.getElementById('recall-modal-subtitle');
+        const recallPageHint    = document.getElementById('recall-page-hint');
+
+        function recallOpen()  { recallModal.classList.remove('hidden'); recallModal.classList.add('flex'); document.body.style.overflow = 'hidden'; lucide.createIcons({ root: recallModal }); }
+        function recallClose() { recallModal.classList.add('hidden'); recallModal.classList.remove('flex'); document.body.style.overflow = ''; }
+
+        document.getElementById('recall-close').addEventListener('click', recallClose);
+        recallModal.addEventListener('click', (e) => { if (e.target === recallModal) recallClose(); });
+
+        // Keep the page hint updated whenever the user switches tabs
+        function updateRecallHint() {
+            const doc = state.docs.find(d => d.id === state.activeViewerDocId);
+            if (doc) {
+                recallPageHint.textContent = `Will summarise pages 1 – ${state.viewerPage} of "${doc.name}"`;
+            } else {
+                recallPageHint.textContent = 'Open a document to begin.';
+            }
+        }
+        document.querySelectorAll('.mode-tab').forEach(t => t.addEventListener('click', updateRecallHint));
+
+        els.btnGenerateRecall.addEventListener('click', async () => {
+            if (!state.activeViewerDocId) return alert("Please upload and open a document first.");
+
+            const doc = state.docs.find(d => d.id === state.activeViewerDocId);
+            if (!doc) return;
+
+            const currentPage = state.viewerPage;
+            const docName = doc.name;
+
+            // Build context from page 1 → current page only
+            let pageContext = `DOCUMENT: ${docName}\n\n`;
+            for (let p = 1; p <= currentPage; p++) {
+                const chunk = doc.textChunks.find(c => c.page === p);
+                if (chunk && chunk.text.trim()) {
+                    pageContext += `[Page ${p}]: ${chunk.text}\n\n`;
+                }
+            }
+
+            // Open modal and show loading
+            recallPoints.innerHTML = '';
+            recallLoadingEl.classList.remove('hidden'); recallLoadingEl.classList.add('flex');
+            recallSubtitle.textContent = `Pages 1 – ${currentPage} of "${docName}"`;
+            recallLoadingPage.textContent = currentPage;
+            recallOpen();
+
+            const schema = {
+                type: "ARRAY",
+                items: {
+                    type: "OBJECT",
+                    properties: {
+                        heading: { type: "STRING" },
+                        points:  { type: "ARRAY", items: { type: "STRING" } }
+                    },
+                    required: ["heading", "points"]
+                }
+            };
+
+            const jsonStr = await callGemini(
+                `Summarise the content from pages 1 to ${currentPage} of the document into concise bullet-point groups.
+                 Group by topic/section. Each group has a short heading and 2-5 bullet points.
+                 Each bullet must be one short sentence — plain language, no jargon.
+                 Return JSON only. No markdown fences, no extra text.`,
+                `You are a study assistant creating a concise summary for active recall. Be brief and clear.\n\n${pageContext}`,
+                schema
+            );
+
+            recallLoadingEl.classList.add('hidden'); recallLoadingEl.classList.remove('flex');
+
+            if (!jsonStr) { recallClose(); return; }
+
+            try {
+                const sections = parseJSON(jsonStr);
+                recallPoints.innerHTML = '';
+
+                sections.forEach(section => {
+                    const div = document.createElement('div');
+                    div.className = 'bg-[#171717] border border-[#262626] rounded-xl p-5 flex flex-col gap-3';
+                    const bullets = (section.points || []).map(pt =>
+                        `<li class="flex items-start gap-2 text-sm text-zinc-100">
+                            <span class="text-indigo-400 mt-0.5 flex-shrink-0">•</span>
+                            <span>${pt}</span>
+                        </li>`
+                    ).join('');
+                    div.innerHTML = `
+                        <h3 class="text-sm font-bold text-white">${section.heading}</h3>
+                        <ul class="flex flex-col gap-2">${bullets}</ul>
+                    `;
+                    recallPoints.appendChild(div);
+                });
+            } catch(e) {
+                recallPoints.innerHTML = `<p class="text-red-400 text-sm text-center">Failed to parse summary. Please try again.</p>`;
+            }
+        });
+
+        // ══════════════════════════════════════════════════════════════════
+        // ALTER EGO MODE  —  Batman Effect (free-form, AI-generated sidekick)
+        // ══════════════════════════════════════════════════════════════════
+
+        // ── UI helpers ────────────────────────────────────────────────────────
+        function aeShow(stepId) {
+            ['ae-step-input','ae-step-loading','ae-step-confirm'].forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                if (id === stepId) {
+                    el.classList.remove('hidden');
+                    el.classList.add('flex');
+                } else {
+                    el.classList.add('hidden');
+                    el.classList.remove('flex');
+                }
+            });
+        }
+
+        // ── Quick suggestion chips ────────────────────────────────────────────
+        document.querySelectorAll('.ae-suggestion').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.getElementById('ae-input').value = btn.textContent.trim();
+                document.getElementById('ae-input').focus();
+            });
+        });
+
+        // ── Generate sidekick via Gemini ──────────────────────────────────────
+        document.getElementById('ae-generate-btn').addEventListener('click', async () => {
+            const userInput = document.getElementById('ae-input').value.trim();
+            if (!userInput) {
+                document.getElementById('ae-input').focus();
+                return;
+            }
+
+            aeShow('ae-step-loading');
+
+            const schema = {
+                type: "OBJECT",
+                properties: {
+                    sidekickName:   { type: "STRING" },
+                    sidekickRole:   { type: "STRING" },
+                    greeting:       { type: "STRING" },
+                    systemPrompt:   { type: "STRING" }
+                },
+                required: ["sidekickName", "sidekickRole", "greeting", "systemPrompt"]
+            };
+
+            const metaPrompt = `The user wants to adopt the following alter ego to overcome task paralysis and study more effectively:
+
+"${userInput}"
+
+Your job is to generate a sidekick/assistant/manager/companion persona that would naturally guide THIS specific alter ego. Think about who would realistically be that character's trusted advisor, AI, manager, or closest confidant.
+
+Return a JSON object with these fields:
+
+- sidekickName: The name/title of the sidekick (e.g. "Dr. Watson", "J.A.R.V.I.S.", "Epictetus")
+- sidekickRole: One short sentence describing their relationship to the alter ego (e.g. "Loyal chronicler and companion to Sherlock Holmes")
+- greeting: A 2-3 sentence in-character opening message from the sidekick to kick off a study session. Should be immersive, warm, and immediately signal the sidekick's personality.
+- systemPrompt: A detailed system prompt (400-600 words) instructing the AI to BE this sidekick when chatting with the user. The user IS the alter ego. The prompt must include:
+  1. Sidekick's tone, voice, vocabulary
+  2. How to use third-person self-distancing (always referring to the user by their alter ego name/title, never their real name)
+  3. How to reframe "I can't do this" type statements using the alter ego's identity
+  4. Three specific ADHD-friendly tactics used IN CHARACTER:
+     a. Task decomposition — breaking paralysis into the single smallest next action
+     b. Time anchoring — 25-minute focused sprint windows
+     c. Emotional grounding — validate the feeling then redirect to "what does [alter ego] do in the next 2 minutes?"
+  5. How to handle study/document-based questions (frame them as mission intel, case files, scrolls, data — whatever fits the alter ego)`;
+
+            const result = await callGemini(metaPrompt, "You are an expert at generating immersive AI personas for psychological self-distancing techniques. Respond with valid JSON only.", schema);
+
+            if (!result) {
+                aeShow('ae-step-input');
+                return;
+            }
+
+            let persona;
+            try {
+                persona = parseJSON(result);
+            } catch(e) {
+                alert("Failed to generate sidekick. Please try again.");
+                aeShow('ae-step-input');
+                return;
+            }
+
+            // Store on state
+            state.alterEgo = {
+                hero:         userInput,
+                sidekick:     persona.sidekickName,
+                emoji:        '✦',
+                greeting:     persona.greeting,
+                systemPrompt: persona.systemPrompt
+            };
+
+            // Populate preview
+            document.getElementById('ae-confirm-hero').textContent     = userInput;
+            document.getElementById('ae-confirm-sidekick').textContent = persona.sidekickName;
+            document.getElementById('ae-confirm-desc').textContent     = persona.sidekickRole;
+
+            aeShow('ae-step-confirm');
+        });
+
+        // Allow Enter key in textarea to trigger generate (Shift+Enter = newline)
+        document.getElementById('ae-input').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                document.getElementById('ae-generate-btn').click();
+            }
+        });
+
+        // ── Back button ───────────────────────────────────────────────────────
+        document.getElementById('ae-back-btn').addEventListener('click', () => {
+            state.alterEgo = null;
+            aeShow('ae-step-input');
+        });
+
+        // ── Enter Alter Ego Mode ──────────────────────────────────────────────
+        els.btnEnterAlterEgo.addEventListener('click', () => {
+            if (!state.alterEgo) return;
+
+            state.alterEgoActive = true;
+            document.getElementById('ae-banner-emoji').textContent   = state.alterEgo.emoji;
+            document.getElementById('ae-banner-sidekick').textContent = state.alterEgo.sidekick;
+            els.alterEgoBanner.classList.remove('hidden');
+
+            switchMode('chat');
+            appendChatMessage('model', state.alterEgo.greeting);
+        });
+
+        // ── Exit Alter Ego Mode ───────────────────────────────────────────────
+        els.btnExitAlterEgo.addEventListener('click', () => {
+            state.alterEgoActive = false;
+            state.alterEgo = null;
+            els.alterEgoBanner.classList.add('hidden');
+
+            // Reset back to input step
+            document.getElementById('ae-input').value = '';
+            aeShow('ae-step-input');
+
+            appendChatMessage('model', 'Alter Ego Mode deactivated. Back to standard assistant mode. Good work today.');
+        });
+    </script>
+</body>
+</html>
