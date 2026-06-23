@@ -19,7 +19,10 @@ type ScreenSize = (typeof SCREEN_SIZES)[number]
 const sizeOrder: Record<ScreenSize, number> = { xs: 0, sm: 1, md: 2, lg: 3, xl: 4, "2xl": 5 } as const
 
 class ComparableScreenSize {
-  constructor(private value: ScreenSize) {}
+  private value: ScreenSize
+  constructor(value: ScreenSize) {
+    this.value = value
+  }
   toString(): ScreenSize { return this.value }
   valueOf(): number { return sizeOrder[this.value] }
   equals(other: ScreenSize): boolean { return this.value === other }
