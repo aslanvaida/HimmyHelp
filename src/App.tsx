@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from "react"
 import { motion, useAnimationControls } from "framer-motion"
-import ThermodynamicGrid from "@/components/ui/interactive-thermodynamic-grid"
+import LiquidChrome from "@/components/ui/LiquidChrome"
 
 // --- UTILS ---
 const cn = (...classes: (string | undefined | null | false)[]) => classes.filter(Boolean).join(" ")
@@ -173,7 +173,6 @@ PixelDot.displayName = "PixelDot"
 
 // --- MAIN APP ---
 export default function App() {
-  const screenSize = useScreenSize()
   const [phase, setPhase] = useState<"intro" | "exiting" | "workspace">("intro")
   const [apiKey, setApiKey] = useState("")
   const [apiError, setApiError] = useState("")
@@ -199,7 +198,7 @@ export default function App() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.8, ease: "easeInOut" }}
-        className="w-screen h-screen overflow-hidden bg-[#2D1E16]"
+        className="w-screen h-screen overflow-hidden bg-[#0a0a0a]"
       >
         <iframe
           src="/himmyhelp.html"
@@ -215,16 +214,20 @@ export default function App() {
       initial={{ opacity: 0 }}
       animate={{ opacity: phase === "exiting" ? 0 : 1, scale: phase === "exiting" ? 1.04 : 1 }}
       transition={{ duration: 0.8, ease: "easeInOut" }}
-      className="relative w-full h-screen min-h-[600px] flex flex-col items-center justify-center gap-8 bg-[#050505] text-center overflow-hidden"
+      className="relative w-full h-screen min-h-[600px] flex flex-col items-center justify-center gap-8 text-center overflow-hidden"
     >
-      <ThermodynamicGrid
-        resolution={screenSize.lessThan("md") ? 18 : 12}
-        coolingFactor={0.96}
-      />
+      <div className="absolute inset-0 z-0">
+        <LiquidChrome
+          baseColor={[0.011764705882352941, 0, 0.043137254901960784]}
+          speed={0.22}
+          amplitude={0.54}
+          interactive={true}
+        />
+      </div>
 
       <div className="z-10 flex flex-col items-center gap-8 pointer-events-none mt-16">
         <div className="flex flex-col items-center gap-4">
-          <p className="text-white text-5xl md:text-7xl font-serif max-w-4xl font-bold tracking-tight px-4 drop-shadow-lg leading-tight">
+          <p className="text-white text-2xl md:text-4xl max-w-4xl px-4 drop-shadow-lg leading-loose" style={{ fontFamily: "'Press Start 2P', monospace" }}>
             Welcome to {" "}
             <span className="italic text-zinc-300">HimmyHelp</span>
           </p>
@@ -233,24 +236,23 @@ export default function App() {
           </p>
         </div>
 
-        <div className="pointer-events-auto flex flex-col items-center gap-3 w-full max-w-sm px-4">
-          <p className="text-zinc-300 text-sm font-medium">
-            Please enter the API key you want to use
-          </p>
+        <div className="pointer-events-auto flex flex-col items-center gap-4 w-full max-w-lg px-4">
           <input
             type="password"
             value={apiKey}
             onChange={e => { setApiKey(e.target.value); setApiError("") }}
             onKeyDown={e => e.key === "Enter" && handleEnter()}
-            placeholder="AIza..."
-            className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-zinc-500 text-sm focus:outline-none focus:ring-2 focus:ring-white/50 backdrop-blur-sm"
+            placeholder="Enter API key here"
+            className="w-full px-6 py-5 bg-black/60 border-4 border-white text-white placeholder-zinc-500 focus:outline-none focus:border-[#a855f7] text-xs backdrop-blur-sm"
+            style={{ fontFamily: "'Press Start 2P', monospace", imageRendering: 'pixelated' }}
           />
           {apiError && (
-            <p className="text-red-400 text-xs text-center">{apiError}</p>
+            <p className="text-red-400 text-center" style={{ fontFamily: "'Press Start 2P', monospace", fontSize: '0.55rem', lineHeight: '1.6' }}>{apiError}</p>
           )}
           <button
             onClick={handleEnter}
-            className="w-full py-3 bg-white text-zinc-950 hover:bg-zinc-200 transition-colors rounded-xl font-bold uppercase tracking-widest text-sm shadow-xl hover:scale-105 active:scale-95"
+            className="w-full py-5 bg-white text-black border-4 border-white hover:bg-[#a855f7] hover:border-[#a855f7] hover:text-white transition-colors active:translate-y-0.5 shadow-[4px_4px_0px_rgba(0,0,0,0.8)]"
+            style={{ fontFamily: "'Press Start 2P', monospace", fontSize: '0.65rem' }}
           >
             Enter Workspace
           </button>

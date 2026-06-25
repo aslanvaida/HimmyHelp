@@ -103,7 +103,7 @@ const ThermodynamicGrid = ({
       mouse.prevX = mouse.x;
       mouse.prevY = mouse.y;
 
-      ctx.fillStyle = "#050505";
+      ctx.fillStyle = "#FFFDD0";
       ctx.fillRect(0, 0, width, height);
 
       for (let r = 0; r < rows; r++) {
@@ -125,7 +125,7 @@ const ThermodynamicGrid = ({
             if (c % 2 === 0 && r % 2 === 0) {
               const x = c * resolution;
               const y = r * resolution;
-              ctx.fillStyle = "#18181b";
+              ctx.fillStyle = "#D4C9A0";
               ctx.fillRect(x + resolution / 2 - 1, y + resolution / 2 - 1, 2, 2);
             }
           }
@@ -153,7 +153,7 @@ const ThermodynamicGrid = ({
   return (
     <div
       ref={containerRef}
-      className={cn("absolute inset-0 z-0 overflow-hidden bg-[#050505]", className)}
+      className={cn("absolute inset-0 z-0 overflow-hidden bg-[#FFFDD0]", className)}
       style={style}
       {...props}
     >

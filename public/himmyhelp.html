@@ -26,9 +26,9 @@
             --bg-hover:  #1e1e1e;
             --border:    #262626;
             --border-hi: #333333;
-            --accent:    #6366f1;
-            --accent-hi: #818cf8;
-            --accent-dk: #4f46e5;
+            --accent:    #a855f7;
+            --accent-hi: #c084fc;
+            --accent-dk: #7e22ce;
             --text-1:    #f5f5f5;
             --text-2:    #a1a1aa;
             --text-3:    #71717a;
@@ -38,8 +38,8 @@
         body {
             background-color: var(--bg-base);
             background-image:
-                radial-gradient(ellipse 80% 55% at 12% 42%, rgba(99,102,241,0.05) 0%, transparent 55%),
-                radial-gradient(ellipse 55% 45% at 88% 12%, rgba(139,92,246,0.04) 0%, transparent 50%);
+                radial-gradient(ellipse 80% 55% at 12% 42%, rgba(168,85,247,0.05) 0%, transparent 55%),
+                radial-gradient(ellipse 55% 45% at 88% 12%, rgba(168,85,247,0.04) 0%, transparent 50%);
             color: var(--text-1);
             font-family: 'Oswald', ui-sans-serif, system-ui, sans-serif;
             overflow: hidden;
@@ -80,7 +80,7 @@
         }
         .resizer:hover, .resizer.resizing {
             background-color: var(--accent);
-            box-shadow: 0 0 8px rgba(99,102,241,0.4);
+            box-shadow: 0 0 8px rgba(168,85,247,0.4);
         }
 
         /* --- PDF Viewer Canvas & Overlay --- */
@@ -97,7 +97,7 @@
         #text-layer span {
             position: absolute; white-space: pre; cursor: text; transform-origin: 0% 0%;
         }
-        ::selection { background: rgba(99, 102, 241, 0.3); }
+        ::selection { background: rgba(168, 85, 247, 0.3); }
 
         /* --- Highlight Colors --- */
         mark.highlight-yellow { background-color: rgba(253, 224, 71, 0.5); color: transparent; }
@@ -148,9 +148,67 @@
         #mode-content, #chat-input-area, .mode-nav {
             background-color: transparent !important;
         }
+
+        /* --- Collapsible Left Panel --- */
+        #panel-left {
+            transition: width 0.25s cubic-bezier(0.4,0,0.2,1), min-width 0.25s cubic-bezier(0.4,0,0.2,1);
+            overflow: hidden;
+            position: relative;
+        }
+        #panel-left.collapsed {
+            width: 40px !important;
+            min-width: 40px !important;
+        }
+        .panel-left-body {
+            transition: opacity 0.15s ease;
+        }
+        #panel-left.collapsed .panel-left-body {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .panel-collapsed-hint {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.15s ease 0.1s;
+        }
+        #panel-left.collapsed .panel-collapsed-hint {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        #toggle-left-icon {
+            transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
+        }
+        #panel-left.collapsed #toggle-left-icon {
+            transform: rotate(180deg);
+        }
+        #resizer-1 {
+            transition: width 0.25s cubic-bezier(0.4,0,0.2,1), opacity 0.15s ease;
+        }
+        #resizer-1.hidden-resizer {
+            width: 0 !important;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* --- Dither background canvas --- */
+        body { background-image: none; }
+        #dither-bg {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            display: block;
+            margin: 0;
+            box-shadow: none;
+            border-radius: 0;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body class="flex flex-col h-screen w-screen text-sm">
+
+    <canvas id="dither-bg"></canvas>
 
     <header class="flex-none h-14 border-b bg-[#0a0a0a]/85 backdrop-blur-xl border-b border-[#262626] flex items-center justify-between px-6 z-20 shadow-sm">
         <div class="flex items-center gap-2">
@@ -162,7 +220,7 @@
         <div class="flex items-center gap-3">
             <div class="relative flex items-center">
                 <i data-lucide="key" class="w-4 h-4 absolute left-3 text-zinc-400"></i>
-                <input type="password" id="api-key-input" placeholder="Gemini API Key..." class="pl-9 pr-4 py-1.5 border border-[#262626] rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 w-64 bg-[#111111] text-white placeholder-zinc-600 shadow-none focus:shadow-[0_0_0_3px_rgba(99,102,241,0.15)]">
+                <input type="password" id="api-key-input" placeholder="Gemini API Key..." class="pl-9 pr-4 py-1.5 border border-[#262626] rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#a855f7] focus:border-[#a855f7] w-64 bg-[#111111] text-white placeholder-zinc-600 shadow-none focus:shadow-[0_0_0_3px_rgba(168,85,247,0.15)]">
             </div>
             <div id="api-status" class="flex items-center gap-1.5 text-xs font-medium text-zinc-300 bg-[#111111] px-3 py-1.5 rounded-lg border border-[#262626]">
                 <div class="w-2 h-2 rounded-full bg-red-500" id="api-indicator"></div>
@@ -175,24 +233,43 @@
 
         <section id="panel-left" class="w-1/5 min-w-[200px] flex flex-col bg-[#111111]/80 border-r border-[#262626] z-10">
 
-            <div class="p-4 border-b border-[#262626] bg-[#111111]">
-                <h2 class="font-semibold text-zinc-50 mb-3 flex items-center gap-2"><i data-lucide="files" class="w-4 h-4"></i> Document Library</h2>
-                <label for="file-input" id="drop-zone" class="border-2 border-dashed border-[#262626] rounded-lg p-6 text-center cursor-pointer hover:bg-[#1e1e1e] hover:border-indigo-500 transition-colors bg-[#111111]/50 block">
-                    <input type="file" id="file-input" multiple accept="application/pdf" class="hidden">
-                    <i data-lucide="upload-cloud" class="w-8 h-8 mx-auto text-zinc-400 mb-2"></i>
-                    <p class="text-xs text-zinc-300 font-medium">Click or Drag PDFs here</p>
-                </label>
+            <!-- Always-visible header with toggle -->
+            <div class="flex-shrink-0 h-12 flex items-center gap-2 px-2 border-b border-[#262626] bg-[#111111]">
+                <h2 class="min-w-0 flex-1 font-semibold text-zinc-50 flex items-center gap-2 overflow-hidden whitespace-nowrap">
+                    <i data-lucide="files" class="w-4 h-4 flex-shrink-0 text-[#a855f7]"></i>
+                    <span class="truncate text-sm">Document Library</span>
+                </h2>
+                <button id="btn-toggle-left" title="Toggle panel" class="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded hover:bg-[#262626] text-zinc-400 hover:text-zinc-50 transition-colors">
+                    <i data-lucide="chevron-left" id="toggle-left-icon" class="w-4 h-4"></i>
+                </button>
             </div>
 
-            <div class="flex-1 overflow-y-auto p-4">
-                <div id="empty-docs" class="text-center text-zinc-400/50 text-xs mt-4">No documents uploaded yet.</div>
-                <ul id="doc-list" class="space-y-2"></ul>
+            <!-- Collapsed hint: vertical label (absolute so it doesn't affect layout) -->
+            <div class="panel-collapsed-hint absolute left-0 right-0 bottom-0 flex flex-col items-center justify-center gap-3" style="top: 48px;">
+                <i data-lucide="files" class="w-4 h-4 text-[#a855f7]"></i>
+                <span style="writing-mode: vertical-rl; transform: rotate(180deg);" class="text-[9px] font-semibold text-zinc-500 uppercase tracking-widest whitespace-nowrap">Docs</span>
+            </div>
 
-                <div class="mt-8">
-                    <h3 class="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3 px-1 flex items-center gap-1"><i data-lucide="highlighter" class="w-3 h-3"></i> Saved Highlights</h3>
-                    <ul id="highlight-list" class="space-y-2">
-                        <div id="empty-highlights" class="text-center text-zinc-400/50 text-xs italic px-2">Select text in a document to save highlights.</div>
-                    </ul>
+            <!-- Collapsible body -->
+            <div class="panel-left-body flex-1 flex flex-col overflow-hidden">
+                <div class="p-4 border-b border-[#262626] bg-[#111111]">
+                    <label for="file-input" id="drop-zone" class="border-2 border-dashed border-[#262626] rounded-lg p-6 text-center cursor-pointer hover:bg-[#1e1e1e] hover:border-[#a855f7] transition-colors bg-[#111111]/50 block">
+                        <input type="file" id="file-input" multiple accept="application/pdf" class="hidden">
+                        <i data-lucide="upload-cloud" class="w-8 h-8 mx-auto text-zinc-400 mb-2"></i>
+                        <p class="text-xs text-zinc-300 font-medium">Click or Drag PDFs here</p>
+                    </label>
+                </div>
+
+                <div class="flex-1 overflow-y-auto p-4">
+                    <div id="empty-docs" class="text-center text-zinc-400/50 text-xs mt-4">No documents uploaded yet.</div>
+                    <ul id="doc-list" class="space-y-2"></ul>
+
+                    <div class="mt-8">
+                        <h3 class="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3 px-1 flex items-center gap-1"><i data-lucide="highlighter" class="w-3 h-3"></i> Saved Highlights</h3>
+                        <ul id="highlight-list" class="space-y-2">
+                            <div id="empty-highlights" class="text-center text-zinc-400/50 text-xs italic px-2">Select text in a document to save highlights.</div>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </section>
@@ -232,7 +309,7 @@
 
             <div id="highlight-popup" class="hidden absolute bg-[#0a0a0a] text-white rounded-lg shadow-xl border border-[#262626] flex flex-col overflow-hidden z-50 transform -translate-x-1/2 -translate-y-full mt-[-10px]">
                 <div class="flex items-center gap-1 p-1 border-b border-[#262626]">
-                    <button class="color-btn w-6 h-6 rounded-full bg-indigo-400 hover:scale-110 transition-transform focus:outline-none" data-color="yellow"></button>
+                    <button class="color-btn w-6 h-6 rounded-full bg-[#c084fc] hover:scale-110 transition-transform focus:outline-none" data-color="yellow"></button>
                     <button class="color-btn w-6 h-6 rounded-full bg-green-400 hover:scale-110 transition-transform focus:outline-none" data-color="green"></button>
                     <button class="color-btn w-6 h-6 rounded-full bg-blue-400 hover:scale-110 transition-transform focus:outline-none" data-color="blue"></button>
                     <button class="color-btn w-6 h-6 rounded-full bg-pink-400 hover:scale-110 transition-transform focus:outline-none" data-color="pink"></button>
@@ -248,12 +325,12 @@
         <section id="panel-right" class="w-[30%] min-w-[300px] flex flex-col bg-[#0a0a0a]/85 backdrop-blur-xl border-b border-[#262626] border-l border-[#262626] z-10 shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.3)]">
 
             <nav class="flex px-2 pt-2 bg-[#0a0a0a] border-b border-[#262626] overflow-x-auto gap-1">
-                <button class="mode-tab active px-3 py-2 text-xs font-semibold border-b-2 border-indigo-400 text-zinc-50 transition-colors" data-mode="chat">Chat</button>
+                <button class="mode-tab active px-3 py-2 text-xs font-semibold border-b-2 border-[#c084fc] text-zinc-50 transition-colors" data-mode="chat">Chat</button>
                 <button class="mode-tab px-3 py-2 text-xs font-semibold border-b-2 border-transparent text-zinc-400 hover:text-zinc-100 transition-colors" data-mode="flashcards">Flashcards</button>
                 <button class="mode-tab px-3 py-2 text-xs font-semibold border-b-2 border-transparent text-zinc-400 hover:text-zinc-100 transition-colors" data-mode="quiz">Quiz</button>
                 <button class="mode-tab px-3 py-2 text-xs font-semibold border-b-2 border-transparent text-zinc-400 hover:text-zinc-100 transition-colors" data-mode="recall">Active Recall</button>
                 <button class="mode-tab px-3 py-2 text-xs font-semibold border-b-2 border-transparent text-zinc-400 hover:text-zinc-100 transition-colors flex items-center gap-1" data-mode="himmel">
-                    <i data-lucide="shield" class="w-3 h-3 text-indigo-400"></i> Alter Ego
+                    <i data-lucide="shield" class="w-3 h-3 text-[#c084fc]"></i> Alter Ego
                 </button>
             </nav>
 
@@ -285,7 +362,7 @@
                         <i data-lucide="layers" class="w-10 h-10 mx-auto text-zinc-400 mb-3"></i>
                         <h3 class="font-bold text-zinc-50">Concept Flashcards</h3>
                         <p class="text-zinc-400 text-xs mt-1 mb-4">Generate flashcards from the active documents.</p>
-                        <button id="btn-generate-cards" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-500 hover:shadow-[0_0_16px_rgba(99,102,241,0.4)] transition-all">Generate Flashcards</button>
+                        <button id="btn-generate-cards" class="bg-[#7e22ce] text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-[#a855f7] hover:shadow-[0_0_16px_rgba(168,85,247,0.4)] transition-all">Generate Flashcards</button>
                     </div>
                 </div>
 
@@ -294,7 +371,7 @@
                         <i data-lucide="help-circle" class="w-10 h-10 mx-auto text-zinc-400 mb-3"></i>
                         <h3 class="font-bold text-zinc-50">Document Quiz</h3>
                         <p class="text-zinc-400 text-xs mt-1 mb-4">15 questions — MCQ + fill-in-the-blank.</p>
-                        <button id="btn-generate-quiz" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-500 hover:shadow-[0_0_16px_rgba(99,102,241,0.4)] transition-all">Take a Quiz</button>
+                        <button id="btn-generate-quiz" class="bg-[#7e22ce] text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-[#a855f7] hover:shadow-[0_0_16px_rgba(168,85,247,0.4)] transition-all">Take a Quiz</button>
                     </div>
                 </div>
 
@@ -304,7 +381,7 @@
                         <h3 class="font-bold text-zinc-50">Active Recall</h3>
                         <p class="text-zinc-400 text-xs mt-1 mb-1">Summarises pages 1 → current page.</p>
                         <p id="recall-page-hint" class="text-zinc-500 text-xs mb-4">Open a document to begin.</p>
-                        <button id="btn-generate-recall" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-500 hover:shadow-[0_0_16px_rgba(99,102,241,0.4)] transition-all">Start Recall Session</button>
+                        <button id="btn-generate-recall" class="bg-[#7e22ce] text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-[#a855f7] hover:shadow-[0_0_16px_rgba(168,85,247,0.4)] transition-all">Start Recall Session</button>
                     </div>
                 </div>
 
@@ -319,7 +396,7 @@
 
                         <div class="flex flex-col gap-2">
                             <label class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Who do you want to become?</label>
-                            <textarea id="ae-input" rows="3" placeholder="e.g. Sherlock Holmes, a stoic Roman emperor, a Navy SEAL commander, Elon Musk, a medieval knight..." class="w-full bg-[#111111] border border-[#262626] rounded-xl px-3 py-2.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 resize-none leading-relaxed"></textarea>
+                            <textarea id="ae-input" rows="3" placeholder="e.g. Sherlock Holmes, a stoic Roman emperor, a Navy SEAL commander, Elon Musk, a medieval knight..." class="w-full bg-[#111111] border border-[#262626] rounded-xl px-3 py-2.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-[#a855f7] focus:border-[#a855f7] resize-none leading-relaxed"></textarea>
                         </div>
 
                         <!-- Quick suggestions -->
@@ -334,14 +411,14 @@
                             </div>
                         </div>
 
-                        <button id="ae-generate-btn" class="w-full py-2.5 bg-indigo-600 text-white font-semibold rounded-xl text-sm hover:bg-indigo-500 hover:shadow-[0_0_16px_rgba(99,102,241,0.4)] active:scale-95 transition-all">
+                        <button id="ae-generate-btn" class="w-full py-2.5 bg-[#7e22ce] text-white font-semibold rounded-xl text-sm hover:bg-[#a855f7] hover:shadow-[0_0_16px_rgba(168,85,247,0.4)] active:scale-95 transition-all">
                             Generate My Sidekick →
                         </button>
                     </div>
 
                     <!-- Step 2: Loading -->
                     <div id="ae-step-loading" class="hidden flex-col items-center gap-3 py-8 text-center">
-                        <div class="w-7 h-7 border-2 border-[#262626] border-t-indigo-400 rounded-full animate-spin"></div>
+                        <div class="w-7 h-7 border-2 border-[#262626] border-t-[#c084fc] rounded-full animate-spin"></div>
                         <p class="text-zinc-500 text-xs">Summoning your sidekick…</p>
                     </div>
 
@@ -357,10 +434,10 @@
                             </div>
                             <div class="border-t border-[#262626] pt-3">
                                 <p class="text-[10px] text-zinc-600 uppercase tracking-widest font-bold mb-1">Guided by</p>
-                                <p id="ae-confirm-sidekick" class="font-semibold text-indigo-400 text-sm"></p>
+                                <p id="ae-confirm-sidekick" class="font-semibold text-[#c084fc] text-sm"></p>
                                 <p id="ae-confirm-desc" class="text-xs text-zinc-500 mt-1 leading-relaxed"></p>
                             </div>
-                            <button id="btn-adopt-himmel" class="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl text-sm hover:bg-indigo-500 hover:shadow-[0_0_16px_rgba(99,102,241,0.4)] active:scale-95 transition-all">
+                            <button id="btn-adopt-himmel" class="w-full py-3 bg-[#7e22ce] text-white font-bold rounded-xl text-sm hover:bg-[#a855f7] hover:shadow-[0_0_16px_rgba(168,85,247,0.4)] active:scale-95 transition-all">
                                 Enter Alter Ego Mode
                             </button>
                         </div>
@@ -370,14 +447,14 @@
             </div>
 
             <div id="loading-overlay" class="hidden absolute inset-0 bg-[#111111]/80 backdrop-blur-sm z-50 flex items-center justify-center flex-col">
-                <div class="w-8 h-8 border-4 border-[#262626] border-t-indigo-400 rounded-full animate-spin mb-3"></div>
+                <div class="w-8 h-8 border-4 border-[#262626] border-t-[#c084fc] rounded-full animate-spin mb-3"></div>
                 <p id="loading-text" class="text-sm font-medium text-zinc-50">Thinking...</p>
             </div>
 
             <div id="chat-input-area" class="p-3 bg-[#111111] border-t border-[#262626]">
-                <div class="relative flex items-end bg-[#111111] border border-[#262626] rounded-lg focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-indigo-500 transition-shadow">
+                <div class="relative flex items-end bg-[#111111] border border-[#262626] rounded-lg focus-within:ring-2 focus-within:ring-[#a855f7] focus-within:border-[#a855f7] transition-shadow">
                     <textarea id="chat-input" rows="1" class="w-full bg-transparent p-3 pr-12 text-sm text-white placeholder-zinc-600 resize-none focus:outline-none max-h-32" placeholder="Ask about the active documents..."></textarea>
-                    <button id="btn-send-chat" class="absolute right-2 bottom-2 p-1.5 bg-indigo-600 text-white rounded-md hover:bg-indigo-500 transition-colors disabled:opacity-50">
+                    <button id="btn-send-chat" class="absolute right-2 bottom-2 p-1.5 bg-[#7e22ce] text-white rounded-md hover:bg-[#a855f7] transition-colors disabled:opacity-50">
                         <i data-lucide="arrow-up" class="w-4 h-4"></i>
                     </button>
                 </div>
@@ -396,7 +473,7 @@
             <div class="flex items-center justify-between sticky top-0 bg-[#0a0a0a]/95 backdrop-blur-sm py-3 z-10 border-b border-[#262626]">
                 <div>
                     <h2 class="font-bold text-white text-base flex items-center gap-2">
-                        <i data-lucide="brain" class="w-4 h-4 text-indigo-400"></i> Active Recall
+                        <i data-lucide="brain" class="w-4 h-4 text-[#c084fc]"></i> Active Recall
                     </h2>
                     <p id="recall-modal-subtitle" class="text-zinc-400 text-xs mt-0.5"></p>
                 </div>
@@ -410,7 +487,7 @@
 
             <!-- Loading state -->
             <div id="recall-loading" class="hidden flex-col items-center gap-3 py-12 text-center">
-                <div class="w-8 h-8 border-4 border-[#262626] border-t-indigo-400 rounded-full animate-spin"></div>
+                <div class="w-8 h-8 border-4 border-[#262626] border-t-[#c084fc] rounded-full animate-spin"></div>
                 <p class="text-zinc-400 text-sm">Summarising pages 1 → <span id="recall-loading-page"></span>…</p>
             </div>
 
@@ -451,7 +528,7 @@
 
             <!-- Progress bar -->
             <div class="w-full h-1 bg-[#1e1e1e] rounded-full overflow-hidden">
-                <div id="fc-progress-fill" class="h-full bg-indigo-400 rounded-full" style="width:0%"></div>
+                <div id="fc-progress-fill" class="h-full bg-[#c084fc] rounded-full" style="width:0%"></div>
             </div>
 
             <!-- Card -->
@@ -464,7 +541,7 @@
                         <span class="text-[10px] text-zinc-500 mt-auto">Click to reveal answer</span>
                     </div>
                     <!-- Back -->
-                    <div class="fc-face fc-back bg-[#111111] border border-indigo-500/20 rounded-2xl p-8 flex flex-col items-center justify-center gap-4 shadow-2xl">
+                    <div class="fc-face fc-back bg-[#111111] border border-[#a855f7]/20 rounded-2xl p-8 flex flex-col items-center justify-center gap-4 shadow-2xl">
                         <span class="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-300">Answer</span>
                         <p id="fc-back-text" class="text-base text-white text-center leading-relaxed"></p>
                     </div>
@@ -476,10 +553,10 @@
 
             <!-- Action buttons (shown after flip) -->
             <div id="fc-actions" class="hidden flex gap-3">
-                <button id="fc-btn-learning" class="flex-1 py-2.5 rounded-xl border border-indigo-600 bg-[#171717] text-zinc-50 text-sm font-semibold hover:bg-[#1e1e1e] transition-colors flex items-center justify-center gap-2">
+                <button id="fc-btn-learning" class="flex-1 py-2.5 rounded-xl border border-[#7e22ce] bg-[#171717] text-zinc-50 text-sm font-semibold hover:bg-[#1e1e1e] transition-colors flex items-center justify-center gap-2">
                     <i data-lucide="refresh-ccw" class="w-4 h-4"></i> Still Learning
                 </button>
-                <button id="fc-btn-known" class="flex-1 py-2.5 rounded-xl bg-indigo-500 text-white text-sm font-bold hover:bg-indigo-400 transition-colors flex items-center justify-center gap-2">
+                <button id="fc-btn-known" class="flex-1 py-2.5 rounded-xl bg-[#a855f7] text-white text-sm font-bold hover:bg-[#c084fc] transition-colors flex items-center justify-center gap-2">
                     <i data-lucide="check" class="w-4 h-4"></i> Got It
                 </button>
             </div>
@@ -489,7 +566,7 @@
                 <i data-lucide="party-popper" class="w-10 h-10 text-zinc-50"></i>
                 <p class="text-zinc-100 font-bold text-lg">Deck complete!</p>
                 <p id="fc-score-text" class="text-zinc-400 text-sm"></p>
-                <button id="fc-btn-restart" class="mt-2 px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-500 transition-colors">
+                <button id="fc-btn-restart" class="mt-2 px-6 py-2.5 bg-[#7e22ce] text-white rounded-xl font-bold hover:bg-[#a855f7] transition-colors">
                     Restart Deck
                 </button>
             </div>
@@ -522,7 +599,7 @@
             <div id="qz-questions" class="flex flex-col gap-6"></div>
 
             <!-- Submit button -->
-            <button id="qz-submit" class="w-full py-3 bg-indigo-500 text-white font-bold rounded-xl hover:bg-indigo-400 transition-colors text-sm sticky bottom-4">
+            <button id="qz-submit" class="w-full py-3 bg-[#a855f7] text-white font-bold rounded-xl hover:bg-[#c084fc] transition-colors text-sm sticky bottom-4">
                 Submit Quiz
             </button>
 
@@ -532,7 +609,7 @@
                 <p class="text-zinc-100 font-bold text-xl">Quiz Complete!</p>
                 <p id="qz-score-text" class="text-white text-sm"></p>
                 <div id="qz-grade" class="text-4xl font-black text-zinc-50"></div>
-                <button id="qz-retake" class="mt-2 px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-500 transition-colors">
+                <button id="qz-retake" class="mt-2 px-6 py-2.5 bg-[#7e22ce] text-white rounded-xl font-bold hover:bg-[#a855f7] transition-colors">
                     Retake Same Quiz
                 </button>
             </div>
@@ -673,6 +750,13 @@
         setupResizer('resizer-1', 'panel-left', 'panel-center');
         setupResizer('resizer-2', 'panel-center', 'panel-right');
 
+        document.getElementById('btn-toggle-left').addEventListener('click', () => {
+            const panel = document.getElementById('panel-left');
+            const resizer = document.getElementById('resizer-1');
+            const collapsed = panel.classList.toggle('collapsed');
+            resizer.classList.toggle('hidden-resizer', collapsed);
+        });
+
         els.dropZone.addEventListener('dragover', (e) => { e.preventDefault(); els.dropZone.classList.add('bg-[#1e1e1e]'); });
         els.dropZone.addEventListener('dragleave', () => els.dropZone.classList.remove('bg-[#1e1e1e]'));
         els.dropZone.addEventListener('drop', (e) => {
@@ -720,10 +804,10 @@
 
             state.docs.forEach(doc => {
                 const li = document.createElement('li');
-                li.className = `flex items-center gap-3 p-2 rounded-md transition-colors cursor-pointer group ${state.activeViewerDocId === doc.id ? 'bg-[#1e1e1e] border border-indigo-500' : 'hover:bg-[#171717] border border-transparent'}`;
+                li.className = `flex items-center gap-3 p-2 rounded-md transition-colors cursor-pointer group ${state.activeViewerDocId === doc.id ? 'bg-[#1e1e1e] border border-[#a855f7]' : 'hover:bg-[#171717] border border-transparent'}`;
 
                 li.innerHTML = `
-                    <input type="checkbox" class="w-4 h-4 rounded border-[#262626] bg-[#111111] text-zinc-300 focus:ring-indigo-500 cursor-pointer" ${doc.active ? 'checked' : ''} onchange="toggleDocActive('${doc.id}', this.checked)">
+                    <input type="checkbox" class="w-4 h-4 rounded border-[#262626] bg-[#111111] text-zinc-300 focus:ring-[#a855f7] cursor-pointer" ${doc.active ? 'checked' : ''} onchange="toggleDocActive('${doc.id}', this.checked)">
                     <div class="flex-1 overflow-hidden" onclick="openDocInViewer('${doc.id}')">
                         <p class="text-sm font-medium text-white truncate">${doc.name}</p>
                         <p class="text-xs text-zinc-400">${doc.numPages} pages</p>
@@ -851,9 +935,9 @@
             els.highlightList.innerHTML = ''; els.emptyHighlights.classList.toggle('hidden', state.highlights.length > 0);
             state.highlights.forEach(h => {
                 const doc = state.docs.find(d => d.id === h.docId); if (!doc) return;
-                const colorMap = { yellow: 'bg-indigo-400', green: 'bg-green-400', blue: 'bg-blue-400', pink: 'bg-pink-400' };
+                const colorMap = { yellow: 'bg-[#c084fc]', green: 'bg-green-400', blue: 'bg-blue-400', pink: 'bg-pink-400' };
                 const li = document.createElement('li');
-                li.className = 'text-xs p-2 rounded bg-[#171717] border border-[#262626] hover:border-indigo-500/30 cursor-pointer shadow-sm relative group';
+                li.className = 'text-xs p-2 rounded bg-[#171717] border border-[#262626] hover:border-[#a855f7]/30 cursor-pointer shadow-sm relative group';
                 li.innerHTML = `
                     <div class="flex items-start gap-2">
                         <div class="w-2 h-2 rounded-full mt-1 flex-shrink-0 ${colorMap[h.color]}"></div>
@@ -944,8 +1028,8 @@
         function switchMode(mode) {
             state.mode = mode;
             els.modeTabs.forEach(t => {
-                if(t.dataset.mode === mode) { t.classList.replace('border-transparent', 'border-indigo-400'); t.classList.replace('text-zinc-400', 'text-zinc-50'); }
-                else { t.classList.replace('border-indigo-400', 'border-transparent'); t.classList.replace('text-zinc-50', 'text-zinc-400'); }
+                if(t.dataset.mode === mode) { t.classList.replace('border-transparent', 'border-[#c084fc]'); t.classList.replace('text-zinc-400', 'text-zinc-50'); }
+                else { t.classList.replace('border-[#c084fc]', 'border-transparent'); t.classList.replace('text-zinc-50', 'text-zinc-400'); }
             });
             els.modeViews.forEach(v => v.classList.add('hidden')); document.getElementById(`view-${mode}`).classList.remove('hidden');
             if (mode === 'chat' || mode === 'himmel') els.chatInputArea.classList.remove('hidden'); else els.chatInputArea.classList.add('hidden');
@@ -985,11 +1069,11 @@
             const div = document.createElement('div'); div.className = `flex gap-3 ${role === 'user' ? 'flex-row-reverse' : ''}`;
             const _aeActive = state.alterEgoActive && state.alterEgo;
             const avatar = role === 'user'
-                ? `<div class="w-8 h-8 rounded-full bg-[#1e1e1e] flex items-center justify-center text-zinc-50 flex-shrink-0 border border-indigo-500/30"><i data-lucide="user" class="w-4 h-4"></i></div>`
+                ? `<div class="w-8 h-8 rounded-full bg-[#1e1e1e] flex items-center justify-center text-zinc-50 flex-shrink-0 border border-[#a855f7]/30"><i data-lucide="user" class="w-4 h-4"></i></div>`
                 : _aeActive
                     ? `<div class="w-8 h-8 rounded-full bg-[#111111] border border-[#262626] flex items-center justify-center flex-shrink-0 text-base leading-none">${state.alterEgo.emoji}</div>`
-                    : `<div class="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center flex-shrink-0 shadow-sm"><i data-lucide="bot" class="w-4 h-4"></i></div>`;
-            const alignClass = role === 'user' ? 'items-end' : 'items-start'; const bgClass = role === 'user' ? 'bg-[#171717] border border-indigo-500/20' : 'bg-[#111111] border border-[#262626] shadow-sm';
+                    : `<div class="w-8 h-8 rounded-full bg-[#7e22ce] text-white flex items-center justify-center flex-shrink-0 shadow-sm"><i data-lucide="bot" class="w-4 h-4"></i></div>`;
+            const alignClass = role === 'user' ? 'items-end' : 'items-start'; const bgClass = role === 'user' ? 'bg-[#171717] border border-[#a855f7]/20' : 'bg-[#111111] border border-[#262626] shadow-sm';
             div.innerHTML = `${avatar}<div class="flex flex-col ${alignClass} max-w-[85%]"><div class="p-3 rounded-xl ${bgClass} markdown-body text-sm text-white w-full overflow-hidden"></div></div>`;
             lucide.createIcons({root: div}); return div;
         }
@@ -1163,10 +1247,10 @@
             const counter = document.getElementById('qz-hint-counter');
             if (left === 0) {
                 counter.classList.remove('text-zinc-50', 'border-[#262626]');
-                counter.classList.add('text-zinc-600', 'border-indigo-900', 'opacity-60');
+                counter.classList.add('text-zinc-600', 'border-[#1e0a3c]', 'opacity-60');
             } else {
                 counter.classList.add('text-zinc-50', 'border-[#262626]');
-                counter.classList.remove('text-zinc-600', 'border-indigo-900', 'opacity-60');
+                counter.classList.remove('text-zinc-600', 'border-[#1e0a3c]', 'opacity-60');
             }
         }
 
@@ -1192,12 +1276,12 @@
 
                 let inputHtml = '';
                 if (q.type === 'fill') {
-                    inputHtml = `<input type="text" id="qz-input-${idx}" placeholder="Type your answer…" class="w-full bg-[#111111] border border-[#262626] rounded-lg px-4 py-2.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">`;
+                    inputHtml = `<input type="text" id="qz-input-${idx}" placeholder="Type your answer…" class="w-full bg-[#111111] border border-[#262626] rounded-lg px-4 py-2.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-[#a855f7] focus:border-[#a855f7]">`;
                 } else {
                     inputHtml = '<div class="flex flex-col gap-2">' + q.options.map((opt, oi) => {
                         const id = `qz-${idx}-${oi}`;
                         return `<label for="${id}" class="flex items-start gap-3 p-2.5 rounded-lg border border-transparent hover:bg-[#1e1e1e] hover:border-[#262626] cursor-pointer transition-colors">
-                            <input type="radio" name="qz-q${idx}" id="${id}" value="${opt}" class="mt-0.5 accent-indigo-500 flex-shrink-0">
+                            <input type="radio" name="qz-q${idx}" id="${id}" value="${opt}" class="mt-0.5 accent-[#a855f7] flex-shrink-0">
                             <span class="text-sm text-white">${opt}</span>
                         </label>`;
                     }).join('') + '</div>';
@@ -1212,13 +1296,13 @@
                                 <p class="text-zinc-100 font-semibold text-sm leading-snug">${q.question}</p>
                             </div>
                         </div>
-                        <button data-hint-idx="${idx}" class="qz-hint-btn flex-shrink-0 flex items-center gap-1 text-[10px] font-semibold text-zinc-400 hover:text-zinc-100 border border-[#262626] hover:border-indigo-600 rounded-lg px-2 py-1 transition-colors bg-[#111111]">
+                        <button data-hint-idx="${idx}" class="qz-hint-btn flex-shrink-0 flex items-center gap-1 text-[10px] font-semibold text-zinc-400 hover:text-zinc-100 border border-[#262626] hover:border-[#7e22ce] rounded-lg px-2 py-1 transition-colors bg-[#111111]">
                             <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>
                             Hint
                         </button>
                     </div>
                     ${inputHtml}
-                    <div id="qz-hint-${idx}" class="hidden text-xs bg-indigo-900/30 border border-indigo-700/30 rounded-lg px-3 py-2 text-zinc-100 italic"></div>
+                    <div id="qz-hint-${idx}" class="hidden text-xs bg-[#1e0a3c]/30 border border-[#6d28d9]/30 rounded-lg px-3 py-2 text-zinc-100 italic"></div>
                     <div id="qz-fb-${idx}" class="hidden text-xs rounded-lg p-3 mt-1"></div>
                 `;
                 qzQuestions.appendChild(wrap);
@@ -1425,7 +1509,7 @@
                     div.className = 'bg-[#171717] border border-[#262626] rounded-xl p-5 flex flex-col gap-3';
                     const bullets = (section.points || []).map(pt =>
                         `<li class="flex items-start gap-2 text-sm text-zinc-100">
-                            <span class="text-indigo-400 mt-0.5 flex-shrink-0">•</span>
+                            <span class="text-[#c084fc] mt-0.5 flex-shrink-0">•</span>
                             <span>${pt}</span>
                         </li>`
                     ).join('');
@@ -1581,6 +1665,146 @@ Return a JSON object with these fields:
 
             appendChatMessage('model', 'Alter Ego Mode deactivated. Back to standard assistant mode. Good work today.');
         });
+
+        // ==========================================
+        // DITHER BACKGROUND — WebGL 2 (matches landing page)
+        // ==========================================
+        (function initDitherBg() {
+            const canvas = document.getElementById('dither-bg');
+            if (!canvas) return;
+            const gl = canvas.getContext('webgl2');
+            if (!gl) return;
+
+            const VS = `#version 300 es
+in vec2 pos;
+void main() { gl_Position = vec4(pos, 0.0, 1.0); }`;
+
+            const FS = `#version 300 es
+precision highp float;
+uniform vec2  resolution;
+uniform float time;
+uniform vec2  mousePos;
+out vec4 fragColor;
+
+const float waveSpeed     = 0.05;
+const float waveFrequency = 3.0;
+const float waveAmplitude = 0.3;
+const vec3  waveColor     = vec3(0.659, 0.333, 0.969);
+const float colorNum      = 4.0;
+const float pixelSize     = 2.0;
+const float mouseRadius   = 0.3;
+
+vec4 _mod289(vec4 x){ return x - floor(x*(1.0/289.0))*289.0; }
+vec4 _perm(vec4 x)  { return _mod289(((x*34.0)+1.0)*x); }
+vec4 _taylorInvSqrt(vec4 r){ return 1.79284291400159 - 0.85373472095314*r; }
+vec2 _fade(vec2 t)  { return t*t*t*(t*(t*6.0-15.0)+10.0); }
+
+float cnoise(vec2 P) {
+  vec4 Pi=floor(P.xyxy)+vec4(0,0,1,1), Pf=fract(P.xyxy)-vec4(0,0,1,1);
+  Pi=_mod289(Pi);
+  vec4 ix=Pi.xzxz,iy=Pi.yyww,fx=Pf.xzxz,fy=Pf.yyww;
+  vec4 i=_perm(_perm(ix)+iy);
+  vec4 gx=fract(i*(1.0/41.0))*2.0-1.0, gy=abs(gx)-0.5, tx=floor(gx+0.5);
+  gx-=tx;
+  vec2 g00=vec2(gx.x,gy.x),g10=vec2(gx.y,gy.y),g01=vec2(gx.z,gy.z),g11=vec2(gx.w,gy.w);
+  vec4 norm=_taylorInvSqrt(vec4(dot(g00,g00),dot(g01,g01),dot(g10,g10),dot(g11,g11)));
+  g00*=norm.x; g01*=norm.y; g10*=norm.z; g11*=norm.w;
+  float n00=dot(g00,vec2(fx.x,fy.x)),n10=dot(g10,vec2(fx.y,fy.y)),
+        n01=dot(g01,vec2(fx.z,fy.z)),n11=dot(g11,vec2(fx.w,fy.w));
+  vec2 fxy=_fade(Pf.xy);
+  return 2.3*mix(mix(n00,n01,fxy.y),mix(n10,n11,fxy.y),fxy.x);
+}
+
+float fbm(vec2 p){
+  float v=0.0,a=1.0,f=waveFrequency;
+  for(int i=0;i<4;i++){ v+=a*abs(cnoise(p)); p*=f; a*=waveAmplitude; }
+  return v;
+}
+float pattern(vec2 p){ vec2 p2=p-time*waveSpeed; return fbm(p+fbm(p2)); }
+
+const float BAYER[64]=float[64](
+  0.0/64.0,48.0/64.0,12.0/64.0,60.0/64.0, 3.0/64.0,51.0/64.0,15.0/64.0,63.0/64.0,
+  32.0/64.0,16.0/64.0,44.0/64.0,28.0/64.0,35.0/64.0,19.0/64.0,47.0/64.0,31.0/64.0,
+  8.0/64.0,56.0/64.0, 4.0/64.0,52.0/64.0,11.0/64.0,59.0/64.0, 7.0/64.0,55.0/64.0,
+  40.0/64.0,24.0/64.0,36.0/64.0,20.0/64.0,43.0/64.0,27.0/64.0,39.0/64.0,23.0/64.0,
+  2.0/64.0,50.0/64.0,14.0/64.0,62.0/64.0, 1.0/64.0,49.0/64.0,13.0/64.0,61.0/64.0,
+  34.0/64.0,18.0/64.0,46.0/64.0,30.0/64.0,33.0/64.0,17.0/64.0,45.0/64.0,29.0/64.0,
+  10.0/64.0,58.0/64.0, 6.0/64.0,54.0/64.0, 9.0/64.0,57.0/64.0, 5.0/64.0,53.0/64.0,
+  42.0/64.0,26.0/64.0,38.0/64.0,22.0/64.0,41.0/64.0,25.0/64.0,37.0/64.0,21.0/64.0
+);
+
+vec3 dither(vec2 uv,vec3 color){
+  vec2 sc=floor(uv*resolution/pixelSize);
+  int x=int(mod(sc.x,8.0)),y=int(mod(sc.y,8.0));
+  float thresh=BAYER[y*8+x]-0.25, step=1.0/(colorNum-1.0);
+  color+=thresh*step;
+  color=clamp(color-0.2,0.0,1.0);
+  return floor(color*(colorNum-1.0)+0.5)/(colorNum-1.0);
+}
+
+void main(){
+  vec2 uv=gl_FragCoord.xy/resolution;
+  vec2 p=uv-0.5; p.x*=resolution.x/resolution.y;
+  float f=pattern(p);
+  vec2 mNDC=(mousePos/resolution-0.5)*vec2(1.0,-1.0); mNDC.x*=resolution.x/resolution.y;
+  f-=0.5*(1.0-smoothstep(0.0,mouseRadius,length(p-mNDC)));
+  vec3 col=dither(uv,mix(vec3(0.0),waveColor,f));
+  fragColor=vec4(col,1.0);
+}`;
+
+            function mkShader(type, src) {
+                const s = gl.createShader(type);
+                gl.shaderSource(s, src); gl.compileShader(s);
+                if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+                    console.error('Dither shader error:', gl.getShaderInfoLog(s)); return null;
+                }
+                return s;
+            }
+            const vs = mkShader(gl.VERTEX_SHADER, VS);
+            const fs = mkShader(gl.FRAGMENT_SHADER, FS);
+            if (!vs || !fs) return;
+
+            const prog = gl.createProgram();
+            gl.attachShader(prog, vs); gl.attachShader(prog, fs); gl.linkProgram(prog);
+            if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+                console.error('Dither link error:', gl.getProgramInfoLog(prog)); return;
+            }
+            gl.useProgram(prog);
+
+            const buf = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,1,1]), gl.STATIC_DRAW);
+            const posLoc = gl.getAttribLocation(prog, 'pos');
+            gl.enableVertexAttribArray(posLoc);
+            gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
+
+            const resLoc   = gl.getUniformLocation(prog, 'resolution');
+            const timeLoc  = gl.getUniformLocation(prog, 'time');
+            const mouseLoc = gl.getUniformLocation(prog, 'mousePos');
+
+            let mx = 0, my = 0;
+            const t0 = performance.now();
+
+            document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+
+            function resize() {
+                canvas.width  = window.innerWidth;
+                canvas.height = window.innerHeight;
+                gl.viewport(0, 0, canvas.width, canvas.height);
+            }
+
+            function render(now) {
+                gl.uniform2f(resLoc, canvas.width, canvas.height);
+                gl.uniform1f(timeLoc, (now - t0) / 1000);
+                gl.uniform2f(mouseLoc, mx, my);
+                gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+                requestAnimationFrame(render);
+            }
+
+            window.addEventListener('resize', resize);
+            resize();
+            requestAnimationFrame(render);
+        })();
     </script>
 </body>
 </html>
