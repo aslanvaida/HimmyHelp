@@ -203,6 +203,45 @@
             opacity: 0;
             pointer-events: none;
         }
+        #panel-right {
+            transition: width 0.25s cubic-bezier(0.4,0,0.2,1), min-width 0.25s cubic-bezier(0.4,0,0.2,1);
+            overflow: hidden;
+            position: relative;
+        }
+        #panel-right.collapsed {
+            width: 40px !important;
+            min-width: 40px !important;
+        }
+        .panel-right-body {
+            transition: opacity 0.15s ease;
+        }
+        #panel-right.collapsed .panel-right-body {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .panel-right-collapsed-hint {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.15s ease 0.1s;
+        }
+        #panel-right.collapsed .panel-right-collapsed-hint {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        #toggle-right-icon {
+            transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
+        }
+        #panel-right.collapsed #toggle-right-icon {
+            transform: rotate(180deg);
+        }
+        #resizer-2 {
+            transition: width 0.25s cubic-bezier(0.4,0,0.2,1), opacity 0.15s ease;
+        }
+        #resizer-2.hidden-resizer {
+            width: 0 !important;
+            opacity: 0;
+            pointer-events: none;
+        }
 
         /* --- Dither background canvas --- */
         body { background-image: none; }
@@ -338,6 +377,26 @@
 
         <section id="panel-right" class="w-[30%] min-w-[300px] flex flex-col bg-[#0a0a0a]/85 backdrop-blur-xl border-b border-[#262626] border-l border-[#262626] z-10 shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.3)]">
 
+            <!-- Always-visible header with toggle -->
+            <div class="flex-shrink-0 h-12 flex items-center gap-2 px-2 border-b border-[#262626] bg-[#0a0a0a]">
+                <button id="btn-toggle-right" title="Toggle panel" class="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded hover:bg-[#262626] text-zinc-400 hover:text-zinc-50 transition-colors">
+                    <i data-lucide="chevron-right" id="toggle-right-icon" class="w-4 h-4"></i>
+                </button>
+                <h2 class="min-w-0 flex-1 font-semibold text-zinc-50 flex items-center gap-2 overflow-hidden whitespace-nowrap">
+                    <i data-lucide="bot" class="w-4 h-4 flex-shrink-0 text-[#a855f7]"></i>
+                    <span class="truncate text-sm">AI Assistant</span>
+                </h2>
+            </div>
+
+            <!-- Collapsed hint: vertical label -->
+            <div class="panel-right-collapsed-hint absolute left-0 right-0 bottom-0 flex flex-col items-center justify-center gap-3" style="top: 48px;">
+                <i data-lucide="bot" class="w-4 h-4 text-[#a855f7]"></i>
+                <span style="writing-mode: vertical-rl; transform: rotate(180deg);" class="text-[9px] font-semibold text-zinc-500 uppercase tracking-widest whitespace-nowrap">AI</span>
+            </div>
+
+            <!-- Collapsible body -->
+            <div class="panel-right-body flex-1 flex flex-col overflow-hidden">
+
             <nav class="flex px-2 pt-2 bg-[#0a0a0a] border-b border-[#262626] overflow-x-auto gap-1">
                 <button class="mode-tab active px-3 py-2 text-xs font-semibold border-b-2 border-[#c084fc] text-zinc-50 transition-colors" data-mode="chat">Chat</button>
                 <button class="mode-tab px-3 py-2 text-xs font-semibold border-b-2 border-transparent text-zinc-400 hover:text-zinc-100 transition-colors" data-mode="flashcards">Flashcards</button>
@@ -374,7 +433,14 @@
                 <div id="view-flashcards" class="mode-view hidden flex-col items-center justify-center min-h-full">
                     <div class="text-center w-full">
                         <i data-lucide="layers" class="w-10 h-10 mx-auto text-zinc-400 mb-3"></i>
-                        <h3 class="font-bold text-zinc-50">Concept Flashcards</h3>
+                        <div class="flex items-center justify-center gap-1.5 mb-1">
+                            <h3 class="font-bold text-zinc-50">Concept Flashcards</h3>
+                            <button id="btn-fc-info" title="Research on flashcard learning" class="w-4 h-4 rounded-full border border-zinc-600 text-zinc-500 hover:border-[#a855f7] hover:text-[#a855f7] transition-colors text-[10px] font-bold leading-none flex items-center justify-center flex-shrink-0">i</button>
+                        </div>
+                        <div id="fc-info-popup" class="hidden text-left bg-[#111111] border border-[#262626] rounded-xl p-4 mt-2 mb-3 text-xs text-zinc-400 leading-relaxed">
+                            <p class="mb-3">A 2021 study by Sun and colleagues at Duke University School of Medicine tested spaced-repetition flashcards with first-year medical students studying psychiatry. The response was overwhelmingly positive: 87% of students who used the flashcards found them helpful, and 83% said they'd recommend them to others. Nearly 70% also reported that having the flashcards eased their test anxiety — a real benefit, with no added study time required. The researchers concluded that flashcards built on spaced repetition are a well-received, low-effort study tool that fits naturally alongside more traditional materials.</p>
+                            <p class="text-zinc-600 text-[10px] leading-relaxed">Sun, M., Tsai, S., Engle, D. L., &amp; Holmer, S. (2021). Spaced repetition flashcards for teaching medical students psychiatry. <em>Medical Science Educator, 31</em>(3), 1125–1131. https://doi.org/10.1007/s40670-021-01286-y</p>
+                        </div>
                         <p class="text-zinc-400 text-xs mt-1 mb-4">Generate flashcards from the active documents.</p>
                         <button id="btn-generate-cards" class="bg-[#7e22ce] text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-[#a855f7] hover:shadow-[0_0_16px_rgba(168,85,247,0.4)] transition-all">Generate Flashcards</button>
                     </div>
@@ -383,7 +449,14 @@
                 <div id="view-quiz" class="mode-view hidden flex-col items-center justify-center min-h-full">
                     <div class="text-center w-full">
                         <i data-lucide="help-circle" class="w-10 h-10 mx-auto text-zinc-400 mb-3"></i>
-                        <h3 class="font-bold text-zinc-50">Document Quiz</h3>
+                        <div class="flex items-center justify-center gap-1.5 mb-1">
+                            <h3 class="font-bold text-zinc-50">Document Quiz</h3>
+                            <button id="btn-quiz-info" title="Research on quiz-based learning" class="w-4 h-4 rounded-full border border-zinc-600 text-zinc-500 hover:border-[#a855f7] hover:text-[#a855f7] transition-colors text-[10px] font-bold leading-none flex items-center justify-center flex-shrink-0">i</button>
+                        </div>
+                        <div id="quiz-info-popup" class="hidden text-left bg-[#111111] border border-[#262626] rounded-xl p-4 mt-2 mb-3 text-xs text-zinc-400 leading-relaxed">
+                            <p class="mb-3">A 2020 study published in CBE—Life Sciences Education tracked two years of student quizzing in a large university molecular biology class, using an online tool called Quizzical that let students both write and answer multiple-choice questions. The results were strong: the more students engaged with quizzing, the better they performed on formal exams — and this held true even after accounting for their prior academic ability. Students whose quiz participation increased between exams went on to score significantly higher on the next one, and those who revisited questions from earlier in the term did better on the cumulative final. The authors concluded that regular self-quizzing is a powerful, subject-independent learning tool that helps students genuinely master the material rather than just memorize it.</p>
+                            <p class="text-zinc-600 text-[10px] leading-relaxed">Riggs, C. D., Kang, S., &amp; Rennie, O. (2020). Positive impact of multiple-choice question authoring and regular quiz participation on student learning. <em>CBE—Life Sciences Education, 19</em>(2), ar16. https://doi.org/10.1187/cbe.19-09-0189</p>
+                        </div>
                         <p class="text-zinc-400 text-xs mt-1 mb-4">15 questions — MCQ + fill-in-the-blank.</p>
                         <button id="btn-generate-quiz" class="bg-[#7e22ce] text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-[#a855f7] hover:shadow-[0_0_16px_rgba(168,85,247,0.4)] transition-all">Take a Quiz</button>
                     </div>
@@ -392,7 +465,14 @@
                 <div id="view-recall" class="mode-view hidden flex-col items-center justify-center min-h-full">
                     <div class="text-center w-full">
                         <i data-lucide="brain" class="w-10 h-10 mx-auto text-zinc-400 mb-3"></i>
-                        <h3 class="font-bold text-zinc-50">Active Recall</h3>
+                        <div class="flex items-center justify-center gap-1.5 mb-1">
+                            <h3 class="font-bold text-zinc-50">Active Recall</h3>
+                            <button id="btn-recall-info" title="Research on active recall" class="w-4 h-4 rounded-full border border-zinc-600 text-zinc-500 hover:border-[#a855f7] hover:text-[#a855f7] transition-colors text-[10px] font-bold leading-none flex items-center justify-center flex-shrink-0">i</button>
+                        </div>
+                        <div id="recall-info-popup" class="hidden text-left bg-[#111111] border border-[#262626] rounded-xl p-4 mt-2 mb-3 text-xs text-zinc-400 leading-relaxed">
+                            <p class="mb-3">A 2024 systematic review by Xu and colleagues, published in the Journal of Affective Disorders, examined active recall study strategies across higher-education students. After screening peer-reviewed studies from five major research databases, the authors found that active recall methods — including flashcards, practice testing, and concept mapping — are especially effective for long-term learning. Flashcards in particular were popular and linked to higher GPAs and test scores, while concept mapping was found to boost student confidence. The review concluded that active recall strategies show real promise for effective learning, even though some of the methods remain underused.</p>
+                            <p class="text-zinc-600 text-[10px] leading-relaxed">Xu, J., Wu, A., Filip, C., Patel, Z., Bernstein, S. R., Tanveer, R., Syed, H., &amp; Kotroczo, T. (2024). Active recall strategies associated with academic achievement in young adults: A systematic review. <em>Journal of Affective Disorders, 354</em>, 191–198. https://doi.org/10.1016/j.jad.2024.03.010</p>
+                        </div>
                         <p class="text-zinc-400 text-xs mt-1 mb-1">Summarises pages 1 → current page.</p>
                         <p id="recall-page-hint" class="text-zinc-500 text-xs mb-4">Open a document to begin.</p>
                         <button id="btn-generate-recall" class="bg-[#7e22ce] text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-[#a855f7] hover:shadow-[0_0_16px_rgba(168,85,247,0.4)] transition-all">Start Recall Session</button>
@@ -404,25 +484,20 @@
                     <!-- Step 1: Free-form input -->
                     <div id="ae-step-input" class="flex flex-col gap-4">
                         <div>
-                            <p class="font-bold text-white text-sm mb-1">Alter Ego Mode</p>
+                            <div class="flex items-center gap-1.5 mb-1">
+                                <p class="font-bold text-white text-sm">Alter Ego Mode</p>
+                                <button id="btn-ae-info" title="Research on alter ego strategies" class="w-4 h-4 rounded-full border border-zinc-600 text-zinc-500 hover:border-[#a855f7] hover:text-[#a855f7] transition-colors text-[10px] font-bold leading-none flex items-center justify-center flex-shrink-0">i</button>
+                            </div>
+                            <div id="ae-info-popup" class="hidden text-left bg-[#111111] border border-[#262626] rounded-xl p-4 mb-3 text-xs text-zinc-400 leading-relaxed">
+                                <p class="mb-3">A 2017 study published in Child Development — known as the "Batman Effect" — found that taking an outsider's view of yourself can meaningfully boost perseverance. Researchers asked young children to stick with a repetitive task while a tempting video game sat within reach. The children who pretended to be a capable character, like Batman, worked the longest and resisted distraction best — outperforming those who simply thought about themselves in the third person, and those who stayed in their own first-person perspective. The idea is that stepping into the role of an admired, competent figure creates psychological distance from your own frustration and impulses, making it easier to stay focused and push through.</p>
+                                <p class="text-zinc-600 text-[10px] leading-relaxed">White, R. E., Prager, E. O., Schaefer, C., Kross, E., Duckworth, A. L., &amp; Carlson, S. M. (2017). The "Batman Effect": Improving perseverance in young children. <em>Child Development, 88</em>(5), 1563–1571. https://doi.org/10.1111/cdev.12695</p>
+                            </div>
                             <p class="text-zinc-500 text-xs leading-relaxed">Describe your alter ego — any hero, leader, or archetype you want to become. The AI will generate your personal sidekick to guide you through your tasks.</p>
                         </div>
 
                         <div class="flex flex-col gap-2">
                             <label class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Who do you want to become?</label>
-                            <textarea id="ae-input" rows="3" placeholder="e.g. Sherlock Holmes, a stoic Roman emperor, a Navy SEAL commander, Elon Musk, a medieval knight..." class="w-full bg-[#111111] border border-[#262626] rounded-xl px-3 py-2.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-[#a855f7] focus:border-[#a855f7] resize-none leading-relaxed"></textarea>
-                        </div>
-
-                        <!-- Quick suggestions -->
-                        <div class="flex flex-col gap-1.5">
-                            <p class="text-[10px] text-zinc-600 uppercase tracking-widest">Quick picks</p>
-                            <div class="flex flex-wrap gap-1.5">
-                                <button class="ae-suggestion px-2.5 py-1 rounded-lg border border-[#262626] bg-[#171717] hover:border-zinc-500 hover:bg-[#1e1e1e] text-zinc-400 hover:text-white text-[11px] transition-all">Mr. Wayne</button>
-                                <button class="ae-suggestion px-2.5 py-1 rounded-lg border border-[#262626] bg-[#171717] hover:border-zinc-500 hover:bg-[#1e1e1e] text-zinc-400 hover:text-white text-[11px] transition-all">Mr. Stark</button>
-                                <button class="ae-suggestion px-2.5 py-1 rounded-lg border border-[#262626] bg-[#171717] hover:border-zinc-500 hover:bg-[#1e1e1e] text-zinc-400 hover:text-white text-[11px] transition-all">Superhuman</button>
-                                <button class="ae-suggestion px-2.5 py-1 rounded-lg border border-[#262626] bg-[#171717] hover:border-zinc-500 hover:bg-[#1e1e1e] text-zinc-400 hover:text-white text-[11px] transition-all">Sherlock Holmes</button>
-                                <button class="ae-suggestion px-2.5 py-1 rounded-lg border border-[#262626] bg-[#171717] hover:border-zinc-500 hover:bg-[#1e1e1e] text-zinc-400 hover:text-white text-[11px] transition-all">Marcus Aurelius</button>
-                            </div>
+                            <textarea id="ae-input" rows="3" placeholder="e.g. a Navy SEAL commander, a stoic philosopher, a research scientist chasing a breakthrough, a Roman emperor, a zen monk" class="w-full bg-[#111111] border border-[#262626] rounded-xl px-3 py-2.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-[#a855f7] focus:border-[#a855f7] resize-none leading-relaxed"></textarea>
                         </div>
 
                         <button id="ae-generate-btn" class="w-full py-2.5 bg-[#7e22ce] text-white font-semibold rounded-xl text-sm hover:bg-[#a855f7] hover:shadow-[0_0_16px_rgba(168,85,247,0.4)] active:scale-95 transition-all">
@@ -476,6 +551,8 @@
                     Powered by <span class="font-semibold text-zinc-400">Gemini Flash</span>
                 </div>
             </div>
+
+            </div><!-- end panel-right-body -->
         </section>
     </main>
 
@@ -770,6 +847,49 @@
             const collapsed = panel.classList.toggle('collapsed');
             resizer.classList.toggle('hidden-resizer', collapsed);
         });
+
+        document.getElementById('btn-toggle-right').addEventListener('click', () => {
+            const panel = document.getElementById('panel-right');
+            const resizer = document.getElementById('resizer-2');
+            const collapsed = panel.classList.toggle('collapsed');
+            resizer.classList.toggle('hidden-resizer', collapsed);
+        });
+
+        const closeAllInfoPopups = () => {
+            document.getElementById('fc-info-popup').classList.add('hidden');
+            document.getElementById('quiz-info-popup').classList.add('hidden');
+            document.getElementById('recall-info-popup').classList.add('hidden');
+            document.getElementById('ae-info-popup').classList.add('hidden');
+        };
+        document.getElementById('btn-fc-info').addEventListener('click', (e) => {
+            e.stopPropagation();
+            const popup = document.getElementById('fc-info-popup');
+            const wasHidden = popup.classList.contains('hidden');
+            closeAllInfoPopups();
+            if (wasHidden) popup.classList.remove('hidden');
+        });
+        document.getElementById('btn-quiz-info').addEventListener('click', (e) => {
+            e.stopPropagation();
+            const popup = document.getElementById('quiz-info-popup');
+            const wasHidden = popup.classList.contains('hidden');
+            closeAllInfoPopups();
+            if (wasHidden) popup.classList.remove('hidden');
+        });
+        document.getElementById('btn-recall-info').addEventListener('click', (e) => {
+            e.stopPropagation();
+            const popup = document.getElementById('recall-info-popup');
+            const wasHidden = popup.classList.contains('hidden');
+            closeAllInfoPopups();
+            if (wasHidden) popup.classList.remove('hidden');
+        });
+        document.getElementById('btn-ae-info').addEventListener('click', (e) => {
+            e.stopPropagation();
+            const popup = document.getElementById('ae-info-popup');
+            const wasHidden = popup.classList.contains('hidden');
+            closeAllInfoPopups();
+            if (wasHidden) popup.classList.remove('hidden');
+        });
+        document.addEventListener('click', closeAllInfoPopups);
 
         els.dropZone.addEventListener('dragover', (e) => { e.preventDefault(); els.dropZone.classList.add('bg-[#1e1e1e]'); });
         els.dropZone.addEventListener('dragleave', () => els.dropZone.classList.remove('bg-[#1e1e1e]'));

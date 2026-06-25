@@ -225,8 +225,8 @@ export default function App() {
             Welcome to {" "}
             <span className="italic" style={{ color: '#DDB98E' }}>HimmyHelp</span>
           </p>
-          <p className="font-sans tracking-widest uppercase text-sm mt-4 font-semibold" style={{ color: '#DDB98E' }}>
-            Study Smart • Get things done efficiently
+          <p className="font-sans tracking-widest uppercase text-sm mt-4 font-semibold italic" style={{ color: '#DDB98E' }}>
+            Don't power through, breeze through your studies
           </p>
         </div>
 
