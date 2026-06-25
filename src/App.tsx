@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from "react"
 import { motion, useAnimationControls } from "framer-motion"
 import LiquidChrome from "@/components/ui/LiquidChrome"
+import PixelDissolve, { type PixelDissolveHandle } from "@/components/ui/PixelDissolve"
 
 // --- UTILS ---
 const cn = (...classes: (string | undefined | null | false)[]) => classes.filter(Boolean).join(" ")
@@ -173,9 +174,10 @@ PixelDot.displayName = "PixelDot"
 
 // --- MAIN APP ---
 export default function App() {
-  const [phase, setPhase] = useState<"intro" | "exiting" | "workspace">("intro")
+  const [phase, setPhase] = useState<"intro" | "workspace">("intro")
   const [apiKey, setApiKey] = useState("")
   const [apiError, setApiError] = useState("")
+  const dissolveRef = useRef<PixelDissolveHandle>(null)
 
   const handleEnter = () => {
     if (!apiKey.trim()) {
@@ -188,34 +190,26 @@ export default function App() {
     }
     setApiError("")
     localStorage.setItem("himmyhelp_api_key", apiKey.trim())
-    setPhase("exiting")
-    setTimeout(() => setPhase("workspace"), 900)
-  }
-
-  if (phase === "workspace") {
-    return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.8, ease: "easeInOut" }}
-        className="w-screen h-screen overflow-hidden bg-[#0a0a0a]"
-      >
-        <iframe
-          src="/himmyhelp.html"
-          title="HimmyHelp Workspace"
-          className="w-full h-full border-none"
-        />
-      </motion.div>
-    )
+    dissolveRef.current?.trigger(() => setPhase("workspace"))
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: phase === "exiting" ? 0 : 1, scale: phase === "exiting" ? 1.04 : 1 }}
-      transition={{ duration: 0.8, ease: "easeInOut" }}
-      className="relative w-full h-screen min-h-[600px] flex flex-col items-center justify-center gap-8 text-center overflow-hidden"
-    >
+    <>
+      {phase === "workspace" ? (
+        <div className="w-screen h-screen overflow-hidden bg-[#0a0a0a]">
+          <iframe
+            src="/himmyhelp.html"
+            title="HimmyHelp Workspace"
+            className="w-full h-full border-none"
+          />
+        </div>
+      ) : (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8, ease: "easeInOut" }}
+          className="relative w-full h-screen min-h-[600px] flex flex-col items-center justify-center gap-8 text-center overflow-hidden"
+        >
       <div className="absolute inset-0 z-0">
         <LiquidChrome
           baseColor={[0.011764705882352941, 0, 0.043137254901960784]}
@@ -227,11 +221,11 @@ export default function App() {
 
       <div className="z-10 flex flex-col items-center gap-8 pointer-events-none mt-16">
         <div className="flex flex-col items-center gap-4">
-          <p className="text-white text-2xl md:text-4xl max-w-4xl px-4 drop-shadow-lg leading-loose" style={{ fontFamily: "'Press Start 2P', monospace" }}>
+          <p className="text-2xl md:text-4xl max-w-4xl px-4 drop-shadow-lg leading-loose" style={{ fontFamily: "'Press Start 2P', monospace", color: '#FCDDBD' }}>
             Welcome to {" "}
-            <span className="italic text-zinc-300">HimmyHelp</span>
+            <span className="italic" style={{ color: '#DDB98E' }}>HimmyHelp</span>
           </p>
-          <p className="text-zinc-300 font-sans tracking-widest uppercase text-sm mt-4 font-semibold">
+          <p className="font-sans tracking-widest uppercase text-sm mt-4 font-semibold" style={{ color: '#DDB98E' }}>
             Study Smart • Get things done efficiently
           </p>
         </div>
@@ -243,21 +237,24 @@ export default function App() {
             onChange={e => { setApiKey(e.target.value); setApiError("") }}
             onKeyDown={e => e.key === "Enter" && handleEnter()}
             placeholder="Enter API key here"
-            className="w-full px-6 py-5 bg-black/60 border-4 border-white text-white placeholder-zinc-500 focus:outline-none focus:border-[#a855f7] text-xs backdrop-blur-sm"
-            style={{ fontFamily: "'Press Start 2P', monospace", imageRendering: 'pixelated' }}
+            className="w-full px-6 py-5 bg-black/60 border-4 focus:outline-none focus:border-[#a855f7] text-xs backdrop-blur-sm"
+            style={{ fontFamily: "'Press Start 2P', monospace", imageRendering: 'pixelated', color: '#FCDDBD', borderColor: '#FCDDBD' }}
           />
           {apiError && (
-            <p className="text-red-400 text-center" style={{ fontFamily: "'Press Start 2P', monospace", fontSize: '0.55rem', lineHeight: '1.6' }}>{apiError}</p>
+            <p className="text-center" style={{ fontFamily: "'Press Start 2P', monospace", fontSize: '0.55rem', lineHeight: '1.6', color: '#f87171' }}>{apiError}</p>
           )}
           <button
             onClick={handleEnter}
-            className="w-full py-5 bg-white text-black border-4 border-white hover:bg-[#a855f7] hover:border-[#a855f7] hover:text-white transition-colors active:translate-y-0.5 shadow-[4px_4px_0px_rgba(0,0,0,0.8)]"
-            style={{ fontFamily: "'Press Start 2P', monospace", fontSize: '0.65rem' }}
+            className="w-full py-5 border-4 hover:bg-[#a855f7] hover:border-[#a855f7] hover:text-white transition-colors active:translate-y-0.5 shadow-[4px_4px_0px_rgba(0,0,0,0.8)] bg-transparent"
+            style={{ fontFamily: "'Press Start 2P', monospace", fontSize: '0.65rem', color: '#FCDDBD', borderColor: '#FCDDBD' }}
           >
             Enter Workspace
           </button>
         </div>
       </div>
-    </motion.div>
+        </motion.div>
+      )}
+      <PixelDissolve ref={dissolveRef} />
+    </>
   )
 }

@@ -29,9 +29,9 @@
             --accent:    #a855f7;
             --accent-hi: #c084fc;
             --accent-dk: #7e22ce;
-            --text-1:    #f5f5f5;
-            --text-2:    #a1a1aa;
-            --text-3:    #71717a;
+            --text-1:    #FCDDBD;
+            --text-2:    #DDB98E;
+            --text-3:    #B8906A;
         }
 
         /* --- Base & Background --- */
@@ -119,16 +119,16 @@
         .transition-transform { transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); }
 
         /* --- Markdown Output --- */
-        .markdown-body h1, .markdown-body h2, .markdown-body h3 { font-weight: 600; margin-top: 1em; margin-bottom: 0.5em; color: #ffffff; letter-spacing: -0.015em; }
-        .markdown-body p { margin-bottom: 0.75em; color: #d4d4d8; line-height: 1.7; }
-        .markdown-body ul, .markdown-body ol { padding-left: 1.5em; margin-bottom: 0.75em; color: #d4d4d8; }
+        .markdown-body h1, .markdown-body h2, .markdown-body h3 { font-weight: 600; margin-top: 1em; margin-bottom: 0.5em; color: #FCDDBD; letter-spacing: -0.015em; }
+        .markdown-body p { margin-bottom: 0.75em; color: #FCDDBD; line-height: 1.7; }
+        .markdown-body ul, .markdown-body ol { padding-left: 1.5em; margin-bottom: 0.75em; color: #FCDDBD; }
         .markdown-body ul { list-style-type: disc; }
         .markdown-body ol { list-style-type: decimal; }
-        .markdown-body strong { color: #f5f5f5; }
-        .markdown-body code { background-color: #1e1e1e; padding: 0.18em 0.45em; border-radius: 5px; font-size: 0.88em; color: #c4b5fd; border: 1px solid #2e2e2e; }
+        .markdown-body strong { color: #FCDDBD; }
+        .markdown-body code { background-color: #1e1e1e; padding: 0.18em 0.45em; border-radius: 5px; font-size: 0.88em; color: #DDB98E; border: 1px solid #2e2e2e; }
         .markdown-body pre { background-color: #111111; padding: 1em 1.25em; border-radius: 8px; overflow-x: auto; margin-bottom: 1em; border: 1px solid #262626; }
-        .markdown-body pre code { background: transparent; border: none; padding: 0; color: #e2e8f0; font-size: 0.9em; }
-        .markdown-body blockquote { border-left: 3px solid var(--accent); padding-left: 1em; color: #a1a1aa; font-style: italic; margin: 0.75em 0; }
+        .markdown-body pre code { background: transparent; border: none; padding: 0; color: #FCDDBD; font-size: 0.9em; }
+        .markdown-body blockquote { border-left: 3px solid var(--accent); padding-left: 1em; color: #DDB98E; font-style: italic; margin: 0.75em 0; }
 
         /* --- AI Typing Indicator --- */
         .typing-indicator span { display: inline-block; width: 6px; height: 6px; background-color: var(--accent); border-radius: 50%; animation: typingPulse 1.2s ease-in-out infinite; }
@@ -142,12 +142,26 @@
 
         /* --- Panel structure --- */
         header, #panel-left, #panel-center, #panel-right {
-            background-color: transparent !important;
             border-color: #262626 !important;
         }
+        header          { background-color: rgba(4, 2, 12, 0.90) !important; backdrop-filter: blur(16px); }
+        #panel-left     { background-color: rgba(4, 2, 12, 0.82) !important; backdrop-filter: blur(12px); }
+        #panel-center   { background-color: rgba(4, 2, 12, 0.60) !important; }
+        #panel-right    { background-color: rgba(4, 2, 12, 0.86) !important; backdrop-filter: blur(16px); }
         #mode-content, #chat-input-area, .mode-nav {
             background-color: transparent !important;
         }
+
+        /* --- Persian Melon text scheme --- */
+        .text-white,
+        .text-zinc-50,
+        .text-zinc-100,
+        .text-zinc-200,
+        .text-zinc-300  { color: #FCDDBD !important; }
+        .text-zinc-400  { color: #DDB98E !important; }
+        .text-zinc-500  { color: #B8906A !important; }
+        .placeholder-zinc-600::placeholder,
+        .placeholder-zinc-500::placeholder { color: #B8906A; }
 
         /* --- Collapsible Left Panel --- */
         #panel-left {
@@ -295,7 +309,7 @@
             </div>
 
             <div id="viewer-scroll-area" class="flex-1 overflow-auto relative p-8 flex justify-center items-start">
-                <div id="pdf-empty-state" class="m-auto text-center text-zinc-400/50">
+                <div id="pdf-empty-state" class="m-auto text-center text-zinc-400">
                     <i data-lucide="book-open" class="w-16 h-16 mx-auto mb-4 opacity-50"></i>
                     <p class="text-lg font-medium text-zinc-300">Center Viewer</p>
                     <p class="text-sm">Upload and select a PDF to begin reading.</p>
